@@ -4,9 +4,19 @@ defaultTargets = ["NonShannon"]
 lintDriver = "batteries/runLinter"
 testDriver = "NonShannonTest"
 
+# `-O0` cuts `leanc` compile time for Lean-side builds; the runtime cost is
+# irrelevant for a proof library and a one-shot book-rendering executable.
+# Matches the `leanprover/reference-manual` package configuration.
+moreLeancArgs = ["-O0"]
+
 [leanOptions]
+# Pretty-prints `fun a ↦ b`
+pp.unicode.fun = true
+# Don't assume a typo is a new variable
 autoImplicit = false
 relaxedAutoImplicit = false
+# Enable all mathlib linters: automatically matches what mathlib uses.
+weak.linter.mathlibStandardSet = true
 
 [[require]]
 name = "PFR"
