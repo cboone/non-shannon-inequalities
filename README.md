@@ -112,6 +112,7 @@ Copyright 2026 Christopher Boone.
 
 Lean code is licensed under [Apache 2.0](./LICENSES/Apache-2.0.txt).
 Python code and development artifacts are licensed under [MIT](./LICENSES/MIT.txt).
-Prose and mathematical exposition are licensed under [CC BY 4.0](./LICENSES/CC-BY-4.0.txt).
+Most repository prose and mathematical exposition are licensed under [CC BY 4.0](./LICENSES/CC-BY-4.0.txt).
+[`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) is adapted from Contributor Covenant and is licensed under [CC BY-SA 4.0](./LICENSES/CC-BY-SA-4.0.txt).
 
 See [`NOTICE`](./NOTICE) and the per-file SPDX identifiers for the authoritative mixed-license breakdown.

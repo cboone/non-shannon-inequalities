@@ -6,9 +6,10 @@ This repository contains material under multiple licenses.
 
 Lean code is licensed under the Apache License 2.0.
 Python code and development artifacts are licensed under the MIT License.
-Prose, planning documents, research notes, bibliographies, and mathematical exposition are licensed under CC BY 4.0.
+Most repository prose, planning documents, research notes, bibliographies, and mathematical exposition are licensed under CC BY 4.0.
+CODE_OF_CONDUCT.md is adapted from Contributor Covenant and is licensed under CC BY-SA 4.0.
 
-See LICENSES/Apache-2.0.txt, LICENSES/MIT.txt, and LICENSES/CC-BY-4.0.txt.
+See LICENSES/Apache-2.0.txt, LICENSES/MIT.txt, LICENSES/CC-BY-4.0.txt, and LICENSES/CC-BY-SA-4.0.txt.
 Per-file SPDX tags are the authoritative license markers for individual files.
 
 Any third-party source material added under references/papers/ must retain its own copyright and licensing metadata. This notice does not relicense such material.
