@@ -15,6 +15,7 @@ Please note that this project has a [Code of Conduct](CODE_OF_CONDUCT.md). By pa
 
 - Lean 4 toolchain (version specified in `lean-toolchain`)
 - Lake (bundled with Lean)
+- `zsh` (required by `bin/bootstrap-worktree`)
 - `uv`
 - `markdownlint-cli2`
 - `cspell`

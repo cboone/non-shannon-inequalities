@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from fractions import Fraction
+from functools import lru_cache
 import json
 from pathlib import Path
 from typing import Any
@@ -27,6 +28,7 @@ def format_rational(value: Fraction) -> str:
     return f"{value.numerator}/{value.denominator}"
 
 
+@lru_cache(maxsize=None)
 def load_schema(schema_name: str) -> dict[str, Any]:
     """Loads one tracked JSON schema by filename."""
 
