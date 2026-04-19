@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Redundancy certificate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "target_id",
+    "sources",
+    "backend",
+    "backend_version",
+    "lean_checkable"
+  ],
+  "properties": {
+    "target_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "backend": {
+      "type": "string",
+      "minLength": 1
+    },
+    "backend_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lean_checkable": {
+      "type": "boolean"
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "weight"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "weight": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:/[1-9][0-9]*)?$"
+        }
+      }
+    }
+  }
+}

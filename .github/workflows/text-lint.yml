@@ -1,0 +1,15 @@
+name: Text Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  markdown:
+    name: Lint (Markdown and spelling)
+    uses: cboone/gh-actions/.github/workflows/text-lint.yml@37896a7915c49270272a637ade714f2fea82655f # v2.1.3
+    with:
+      run-cspell: true
+      run-prettier: false
