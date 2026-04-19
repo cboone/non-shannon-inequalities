@@ -1,3 +1,7 @@
+-- SPDX-FileCopyrightText: 2026 Christopher Boone
+--
+-- SPDX-License-Identifier: Apache-2.0
+
 /- Entrypoint for the Lean statement layer of the non-Shannon inequality project. -/
 import NonShannon.Catalog
 import NonShannon.Certificate.Schema

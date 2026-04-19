@@ -10,9 +10,12 @@ checkdecls
 codepoint
 cond
 cooldown
+docstring
+docstrings
 Dougherty
 doughertyfreilingzeger
 entropic
+extensionless
 Farkas
 Finset
 Fintype
@@ -29,6 +32,8 @@ kacedromashchenko
 lakefile
 leanprover
 linarith
+lockfile
+lockfiles
 Mathlib
 Mathlib's
 Matús
@@ -53,6 +58,7 @@ submodularity
 Tarik
 teorth
 testpaths
+uncited
 venv
 worktree
 worktrees

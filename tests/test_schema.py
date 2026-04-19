@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Christopher Boone
+#
+# SPDX-License-Identifier: MIT
+
 from fractions import Fraction
 from pathlib import Path
 

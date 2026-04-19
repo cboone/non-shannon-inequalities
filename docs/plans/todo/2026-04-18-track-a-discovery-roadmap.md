@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Christopher Boone
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # 2026-04-18 Track A Discovery Roadmap
 
 ## Context

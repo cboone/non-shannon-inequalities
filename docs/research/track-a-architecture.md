@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Christopher Boone
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Track A Architecture
 
 Track A has three cooperating layers.

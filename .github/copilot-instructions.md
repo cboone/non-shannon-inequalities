@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Christopher Boone
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # GitHub Copilot Instructions for non-shannon-inequalities
 
 For full project conventions, see `AGENTS.md` in the repository root.

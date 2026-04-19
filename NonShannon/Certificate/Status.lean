@@ -1,3 +1,7 @@
+-- SPDX-FileCopyrightText: 2026 Christopher Boone
+--
+-- SPDX-License-Identifier: Apache-2.0
+
 namespace NonShannon
 
 /-- High-level lifecycle states for candidate inequalities and certificates. -/

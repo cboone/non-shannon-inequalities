@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Christopher Boone
+#
+# SPDX-License-Identifier: MIT
+
 from pathlib import Path
 
 from non_shannon_search.canonical import canonicalize_candidate

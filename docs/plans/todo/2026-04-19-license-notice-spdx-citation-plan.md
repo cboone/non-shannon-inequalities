@@ -46,8 +46,8 @@ This rule needs to be made explicit in the implementation, because the current `
 
 Why this comes first:
 
-- Every later `SPDX-License-Identifier: Apache-2.0` tag will continue to fail REUSE validation until the license filename is corrected.
-- Every later `SPDX-License-Identifier: MIT` tag will fail REUSE validation until the MIT license text is present under `LICENSES/`.
+- Every later `Apache-2.0` SPDX tag will continue to fail REUSE validation until the license filename is corrected.
+- Every later `MIT` SPDX tag will fail REUSE validation until the MIT license text is present under `LICENSES/`.
 
 ### 2. Add `NOTICE`
 

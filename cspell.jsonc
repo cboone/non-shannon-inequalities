@@ -13,6 +13,7 @@
     ".lake/**",
     ".venv/**",
     "docs/plans/done/**",
+    "LICENSES/**",
     "references/papers/**",
     "references/papers.bib",
     "lake-manifest.json",

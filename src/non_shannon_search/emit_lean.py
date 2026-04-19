@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Christopher Boone
+#
+# SPDX-License-Identifier: MIT
+
 from __future__ import annotations
 
 from fractions import Fraction

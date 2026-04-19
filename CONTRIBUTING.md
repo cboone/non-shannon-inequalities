@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Christopher Boone
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Contributing to non-shannon-inequalities
 
 Thank you for your interest in contributing to `non-shannon-inequalities`.

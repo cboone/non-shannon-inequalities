@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Christopher Boone
+#
+# SPDX-License-Identifier: MIT
+
 """Python tooling for non-Shannon inequality search and certificate handling."""
 
 from .canonical import canonicalize_candidate
