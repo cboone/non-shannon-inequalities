@@ -10,18 +10,20 @@ This file provides guidance to AI coding agents when working with code in this r
 
 ```bash
 bin/bootstrap-worktree         # mandatory first-time Lean setup (lake update + cache + build)
-make bootstrap                 # same as bin/bootstrap-worktree
+make bootstrap                 # Lean bootstrap plus uv sync --dev
 lake build NonShannon          # build the main Lean library
 lake test                      # run the NonShannonTest example suite
 lake lint                      # run batteries/runLinter over the NonShannon library
 make build                     # guarded lake build NonShannon
 make test                      # guarded lake test
 make lean-lint                 # guarded lake lint
-make lint                      # markdownlint-cli2 + cspell
-make check                     # lint + lean-lint + build + test
+make py-lint                   # ruff over the Python search tooling
+make py-test                   # pytest over the Python search tooling
+make lint                      # markdownlint-cli2 + cspell + ruff
+make check                     # lint + lean-lint + build + test + py-test
 ```
 
-Full local check for the Lean-only scaffold: `make check`.
+Full local check: `make check`.
 
 ## Fresh Clone / Worktree Bootstrap
 
@@ -74,6 +76,8 @@ Every public module added in `NonShannon/` must land with a matching module unde
 ## Python Workflow
 
 The Python tooling layer is managed with `uv`. Use `uv` for Python commands, not `python3` or `pip`. Large generated search artifacts do not belong in git; only curated small fixtures under `data/fixtures/` should be tracked.
+
+Python sources live under `src/non_shannon_search/`, with tests under `tests/` and tracked interchange schemas under `schemas/`.
 
 ## Vendored Lean Dependencies
 

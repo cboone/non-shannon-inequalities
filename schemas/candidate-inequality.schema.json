@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Candidate inequality",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "label",
+    "variable_count",
+    "basis",
+    "terms",
+    "provenance",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "variable_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "basis": {
+      "type": "string",
+      "enum": ["joint_entropy"]
+    },
+    "terms": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/term"
+      }
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "copy_parameters_ref": {
+      "type": ["string", "null"]
+    },
+    "symmetry_orbit_size": {
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "candidate",
+        "reference",
+        "redundant",
+        "validated",
+        "rejected"
+      ]
+    }
+  },
+  "$defs": {
+    "subset": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "uniqueItems": true
+    },
+    "term": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subset", "coefficient"],
+      "properties": {
+        "subset": {
+          "$ref": "#/$defs/subset"
+        },
+        "coefficient": {
+          "$ref": "#/$defs/rational"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "rational": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:/[1-9][0-9]*)?$"
+    }
+  }
+}
