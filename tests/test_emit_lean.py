@@ -4,7 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from non_shannon_search.emit_lean import emit_candidate_constant, format_lean_string
+from non_shannon_search.emit_lean import (
+    emit_candidate_constant,
+    format_lean_string,
+    lean_basis_constructor,
+)
 from non_shannon_search.schema import load_candidate
 
 
@@ -63,3 +67,20 @@ def test_emit_candidate_constant_accepts_override_for_unsafe_id() -> None:
     source = emit_candidate_constant(candidate, constant_name="first_candidate")
 
     assert "def first_candidate : CandidateInequality" in source
+
+
+def test_emit_candidate_constant_renders_basis_from_candidate() -> None:
+    candidate = load_candidate(FIXTURE)
+    source = emit_candidate_constant(candidate)
+
+    assert "basis := .jointEntropy" in source
+
+
+def test_lean_basis_constructor_maps_joint_entropy() -> None:
+    assert lean_basis_constructor("joint_entropy") == ".jointEntropy"
+
+
+def test_emit_candidate_constant_rejects_unknown_basis() -> None:
+    candidate = replace(load_candidate(FIXTURE), basis="conditional_entropy")
+    with pytest.raises(ValueError, match="unsupported basis"):
+        emit_candidate_constant(candidate)

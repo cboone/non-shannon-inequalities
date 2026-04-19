@@ -9,6 +9,23 @@ from .schema import CandidateInequality
 LEAN_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_']*$")
 
 
+BASIS_LEAN_CONSTRUCTOR = {
+    "joint_entropy": ".jointEntropy",
+}
+
+
+def lean_basis_constructor(basis: str) -> str:
+    """Maps a schema-level `basis` value to its Lean `CoordinateBasis` constructor."""
+
+    try:
+        return BASIS_LEAN_CONSTRUCTOR[basis]
+    except KeyError:
+        supported = ", ".join(sorted(BASIS_LEAN_CONSTRUCTOR))
+        raise ValueError(
+            f"unsupported basis {basis!r}; emit_lean knows these bases: {supported}"
+        ) from None
+
+
 def format_lean_rational(value: Fraction) -> str:
     """Formats a rational coefficient for Lean source emission."""
 
@@ -66,7 +83,7 @@ def emit_candidate_constant(candidate: CandidateInequality, constant_name: str |
         f"    label := {format_lean_string(candidate.label)}\n"
         f"    vector :=\n"
         f"      {{ variableCount := {candidate.variable_count}\n"
-        f"        basis := .jointEntropy\n"
+        f"        basis := {lean_basis_constructor(candidate.basis)}\n"
         f"        terms :=\n"
         f"{terms_block} }}\n"
         f"    provenance := {{ source := {format_lean_string(candidate.provenance.source)}, note := {format_lean_string(candidate.provenance.note)} }}\n"
