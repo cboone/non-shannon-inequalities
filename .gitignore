@@ -1,0 +1,8 @@
+.DS_Store
+.lake/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+data/generated/
+data/search-runs/

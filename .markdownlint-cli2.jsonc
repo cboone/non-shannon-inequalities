@@ -1,0 +1,22 @@
+{
+  "config": {
+    "MD013": false,
+    "MD024": {
+      "siblings_only": true
+    },
+    "MD025": false,
+    "MD026": {
+      "punctuation": ".,;!"
+    },
+    "MD040": false,
+    "MD041": false,
+    "MD060": false,
+    "MD010": {
+      "code_blocks": false
+    }
+  },
+  "ignores": [
+    ".lake/**",
+    "docs/plans/done/**"
+  ]
+}

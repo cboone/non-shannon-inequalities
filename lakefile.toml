@@ -1,0 +1,20 @@
+name = "NonShannon"
+version = "0.1.0"
+defaultTargets = ["NonShannon"]
+lintDriver = "batteries/runLinter"
+testDriver = "NonShannonTest"
+
+[leanOptions]
+autoImplicit = false
+relaxedAutoImplicit = false
+
+[[require]]
+name = "PFR"
+git = "https://github.com/teorth/pfr"
+rev = "80daaf1"
+
+[[lean_lib]]
+name = "NonShannon"
+
+[[lean_lib]]
+name = "NonShannonTest"
