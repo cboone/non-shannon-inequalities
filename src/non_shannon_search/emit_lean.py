@@ -13,6 +13,30 @@ def format_lean_rational(value: Fraction) -> str:
     return f"(({value.numerator} : Rat) / ({value.denominator} : Rat))"
 
 
+def format_lean_string(value: str) -> str:
+    """Formats a Python string as a Lean 4 double-quoted string literal."""
+
+    pieces = ['"']
+    for character in value:
+        codepoint = ord(character)
+        if character == "\\":
+            pieces.append("\\\\")
+        elif character == '"':
+            pieces.append('\\"')
+        elif character == "\n":
+            pieces.append("\\n")
+        elif character == "\r":
+            pieces.append("\\r")
+        elif character == "\t":
+            pieces.append("\\t")
+        elif codepoint < 0x20 or codepoint == 0x7F:
+            pieces.append(f"\\u{{{codepoint:x}}}")
+        else:
+            pieces.append(character)
+    pieces.append('"')
+    return "".join(pieces)
+
+
 def emit_candidate_constant(candidate: CandidateInequality, constant_name: str | None = None) -> str:
     """Emits a Lean constant skeleton for one candidate inequality fixture."""
 
@@ -28,13 +52,13 @@ def emit_candidate_constant(candidate: CandidateInequality, constant_name: str |
     terms_block = "\n".join(term_lines)
     return (
         f"def {name} : CandidateInequality :=\n"
-        f"  {{ id := {candidate.id!r}\n"
-        f"    label := {candidate.label!r}\n"
+        f"  {{ id := {format_lean_string(candidate.id)}\n"
+        f"    label := {format_lean_string(candidate.label)}\n"
         f"    vector :=\n"
         f"      {{ variableCount := {candidate.variable_count}\n"
         f"        basis := .jointEntropy\n"
         f"        terms :=\n"
         f"{terms_block} }}\n"
-        f"    provenance := {{ source := {candidate.provenance.source!r}, note := {candidate.provenance.note!r} }}\n"
+        f"    provenance := {{ source := {format_lean_string(candidate.provenance.source)}, note := {format_lean_string(candidate.provenance.note)} }}\n"
         f"    status := .{candidate.status} }}"
     )
