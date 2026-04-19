@@ -15,7 +15,14 @@ private def zu : VariableSubset := { vars := [2, 3] }
 private def xzu : VariableSubset := { vars := [0, 2, 3] }
 private def yzu : VariableSubset := { vars := [1, 2, 3] }
 
-/-- The averaged Zhang-Yeung inequality in the joint-entropy basis, scaled by 4 to keep integer coefficients. -/
+/-- The averaged Zhang-Yeung inequality in the joint-entropy basis, scaled by 4 to keep integer coefficients.
+
+This is the four-variable non-Shannon inequality from Zhang and Yeung [1998, Eq. (23)], rewritten in the joint-entropy basis and scaled by 4 so that every coefficient is integral.
+
+## References
+
+* [zhangyeung1998]: Zhang, Zhen and Yeung, Raymond W., "On Characterization of Entropy Function via Information Inequalities," IEEE Transactions on Information Theory 44(4), 1998, pp. 1440--1452.
+-/
 def zhangYeungAveragedScaled : CandidateInequality :=
   { id := "zhang-yeung-averaged-scaled"
     label := "Zhang-Yeung averaged inequality (scaled by 4)"

@@ -89,7 +89,15 @@ See [`AGENTS.md`](AGENTS.md) for project-local conventions and [`CONTRIBUTING.md
 
 ## References
 
-The shared bibliography and source-material layout live under [`references/`](references/). The initial bibliography covers the first non-Shannon inequalities, the DFZ families, Matús's infinite-family work, and adjacent background needed for Track A.
+The shared bibliography and source-material layout live under [`references/`](references/). The canonical bibliography for documentation and Lean docstrings is [`references/papers.bib`](references/papers.bib).
+
+The initial Track A bibliography covers:
+
+- Zhang and Yeung's first non-Shannon inequalities (`zhangyeung1997`, `zhangyeung1998`)
+- Dougherty, Freiling, and Zeger's DFZ inequalities and survey (`doughertyfreilingzeger2006`, `doughertyfreilingzeger2011`)
+- Matús's infinite-family and non-polyhedrality papers (`matus2007isit`, `matus2007tit`)
+- Chan and Yeung on the group-theoretic correspondence (`chanyeung2002`)
+- Kaced and Romashchenko on conditional information inequalities (`kacedromashchenko2013`)
 
 ## AI Statement
 
@@ -97,4 +105,10 @@ This formalization is being completed with substantial assistance from Opus 4.6 
 
 ## License
 
-Copyright 2026 Christopher Boone. Lean code is licensed under [Apache 2.0](./LICENSES/APACHE-2.0.txt). Prose and mathematical exposition are licensed under [CC BY 4.0](./LICENSES/CC-BY-4.0.txt).
+Copyright 2026 Christopher Boone.
+
+Lean code is licensed under [Apache 2.0](./LICENSES/Apache-2.0.txt).
+Python code and development artifacts are licensed under [MIT](./LICENSES/MIT.txt).
+Prose and mathematical exposition are licensed under [CC BY 4.0](./LICENSES/CC-BY-4.0.txt).
+
+See [`NOTICE`](./NOTICE) and the per-file SPDX identifiers for the authoritative mixed-license breakdown.
