@@ -1,0 +1,22 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "dictionaryDefinitions": [
+    {
+      "name": "project-words",
+      "path": "./cspell-words.txt",
+      "addWords": true
+    }
+  ],
+  "dictionaries": ["project-words"],
+  "ignorePaths": [
+    ".lake/**",
+    ".venv/**",
+    "docs/plans/done/**",
+    "references/papers/**",
+    "references/papers.bib",
+    "lake-manifest.json",
+    "uv.lock",
+    "cspell-words.txt"
+  ]
+}

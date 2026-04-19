@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'LICENSE'
+      - '.gitignore'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'LICENSE'
+      - '.gitignore'
+  workflow_dispatch:
+
+jobs:
+  lean:
+    name: Build and lint (Lean)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache elan toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/.elan
+          key: elan-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}
+      - uses: leanprover/lean-action@c544e89643240c6b398f14a431bcdc6309e36b3e # v1
+      - name: Lean lint
+        run: lake lint
+      - name: Lean test
+        run: lake test
+
+  python:
+    name: Lint and test (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+      - name: Sync dependencies
+        run: uv sync --dev
+      - name: Ruff
+        run: uv run ruff check .
+      - name: Pytest
+        run: uv run pytest
