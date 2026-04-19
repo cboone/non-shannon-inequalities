@@ -1,4 +1,4 @@
-# non-shannon-inequalities
+# Non-Shannon Inequalities
 
 A hybrid Lean 4 plus Python research repository for discovering, classifying, and validating non-Shannon information inequalities.
 
@@ -93,8 +93,8 @@ The shared bibliography and source-material layout live under [`references/`](re
 
 ## AI Statement
 
-This repository is being developed with substantial assistance from Claude and GPT-based coding agents. The AI assistance is being used for repository scaffolding, code structure, documentation, and implementation support.
+This formalization is being completed with substantial assistance from Opus 4.6 + 4.7 and GPT 5.4, through [`claude`](https://claude.com/claude-code) and [`opencode`](https://opencode.ai), and [GitHub Copilot](https://github.com/features/copilot).
 
 ## License
 
-MIT. See [`LICENSE`](LICENSE).
+Copyright 2026 Christopher Boone. Lean code is licensed under [Apache 2.0](./LICENSES/APACHE-2.0.txt). Prose and mathematical exposition are licensed under [CC BY 4.0](./LICENSES/CC-BY-4.0.txt).
