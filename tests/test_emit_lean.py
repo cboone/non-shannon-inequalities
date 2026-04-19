@@ -1,5 +1,8 @@
+from dataclasses import replace
 from fractions import Fraction
 from pathlib import Path
+
+import pytest
 
 from non_shannon_search.emit_lean import emit_candidate_constant, format_lean_string
 from non_shannon_search.schema import load_candidate
@@ -41,3 +44,22 @@ def test_emit_candidate_constant_renders_rational_coefficients() -> None:
 
     for term in candidate.terms:
         assert isinstance(term.coefficient, Fraction)
+
+
+def test_emit_candidate_constant_rejects_invalid_derived_identifier() -> None:
+    candidate = replace(load_candidate(FIXTURE), id="1st candidate")
+    with pytest.raises(ValueError, match="valid Lean identifier"):
+        emit_candidate_constant(candidate)
+
+
+def test_emit_candidate_constant_rejects_invalid_explicit_identifier() -> None:
+    candidate = load_candidate(FIXTURE)
+    with pytest.raises(ValueError, match="constant_name"):
+        emit_candidate_constant(candidate, constant_name="has space")
+
+
+def test_emit_candidate_constant_accepts_override_for_unsafe_id() -> None:
+    candidate = replace(load_candidate(FIXTURE), id="1st candidate")
+    source = emit_candidate_constant(candidate, constant_name="first_candidate")
+
+    assert "def first_candidate : CandidateInequality" in source

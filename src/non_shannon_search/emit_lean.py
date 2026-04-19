@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 from fractions import Fraction
+import re
 
 from .schema import CandidateInequality
+
+
+LEAN_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_']*$")
 
 
 def format_lean_rational(value: Fraction) -> str:
@@ -40,7 +44,13 @@ def format_lean_string(value: str) -> str:
 def emit_candidate_constant(candidate: CandidateInequality, constant_name: str | None = None) -> str:
     """Emits a Lean constant skeleton for one candidate inequality fixture."""
 
-    name = constant_name or candidate.id.replace("-", "_")
+    name = constant_name if constant_name is not None else candidate.id.replace("-", "_")
+    if not LEAN_IDENTIFIER_RE.match(name):
+        source = "constant_name" if constant_name is not None else f"candidate id {candidate.id!r}"
+        raise ValueError(
+            f"{source} does not yield a valid Lean identifier ({name!r}); "
+            "pass an explicit constant_name (or --name on the CLI)"
+        )
     term_lines = [
         "          ["
         + ",\n".join(

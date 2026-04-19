@@ -81,10 +81,14 @@ class Term:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Term":
-        return cls(
-            subset=tuple(int(value) for value in data["subset"]),
-            coefficient=parse_rational(data["coefficient"]),
-        )
+        raw = tuple(int(value) for value in data["subset"])
+        subset = tuple(sorted(raw))
+        for left, right in zip(subset, subset[1:]):
+            if left == right:
+                raise ValueError(
+                    f"subset contains duplicate index {left}: {list(raw)}"
+                )
+        return cls(subset=subset, coefficient=parse_rational(data["coefficient"]))
 
     def to_dict(self) -> dict[str, Any]:
         return {
