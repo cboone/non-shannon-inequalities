@@ -2,7 +2,7 @@ import NonShannon.Prelude
 
 namespace NonShannon
 
-/-- A list of variable indices denoting a subset. The representation is an arbitrary `List Var`; the normalization invariant (strictly increasing, hence duplicate-free) is carried by the separate `VariableSubset.isNormalized` predicate rather than enforced at construction. Consumers that rely on canonicality should assume or require `isNormalized` explicitly. -/
+/-- A list of variable indices denoting a subset. The representation is an arbitrary `List Var`; the normalization invariant (strictly increasing, hence duplicate-free) is carried by the separate `VariableSubset.isNormalized` predicate rather than enforced at construction. Consumers that rely on a canonical representation should assume or require `isNormalized` explicitly. -/
 structure VariableSubset where
   /-- Underlying variable indices. May be in any order until `isNormalized` is established. -/
   vars : List Var
