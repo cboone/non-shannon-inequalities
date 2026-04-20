@@ -1,6 +1,8 @@
 Affeldt
 AITIP
 batteries
+Bijective
+bijections
 bijectivity
 booktitle
 cboone
@@ -12,7 +14,9 @@ codepoint
 cond
 cooldown
 Coraline
+dataclass
 dedup
+definitionally
 disjointness
 docstring
 docstrings
@@ -30,8 +34,10 @@ Freiling
 Gattegno
 Hasan
 Hoelzl
+hardwiring
 inproceedings
 Ingleton
+itertools
 ISIT
 isit
 ITIP
@@ -51,12 +57,14 @@ Makefiles
 Mathlib
 Mathlib's
 Matús
+nauty
 noncomputable
 olean
 oleans
 opencode
 PFR
 polymatroid
+pointwise
 polyhedrality
 psitip
 Pulikkoonattu
@@ -64,6 +72,7 @@ pycache
 pyproject
 pytest
 readlink
+relabelings
 Rocq
 Romashchenko
 scipy
@@ -72,7 +81,10 @@ setopt
 Shannon
 simpa
 submodularity
+subphase
+subphases
 Tahar
+termwise
 Tarik
 teorth
 testpaths
