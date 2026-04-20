@@ -170,9 +170,14 @@ This formalization is being completed with substantial assistance from Opus 4.6 
 
 Copyright 2026 Christopher Boone.
 
-Lean code is licensed under [Apache 2.0](./LICENSES/Apache-2.0.txt).
-Python code and development artifacts are licensed under [MIT](./LICENSES/MIT.txt).
-Most repository prose and mathematical exposition are licensed under [CC BY 4.0](./LICENSES/CC-BY-4.0.txt).
-[`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) is adapted from Contributor Covenant and is licensed under [CC BY-SA 4.0](./LICENSES/CC-BY-SA-4.0.txt).
+This repository carries REUSE-style mixed-license coverage:
 
-See [`NOTICE`](./NOTICE) and the per-file SPDX identifiers for the authoritative mixed-license breakdown.
+- Lean code under [Apache 2.0](./LICENSES/Apache-2.0.txt).
+- Other substantive code — Python under `src/` and `tests/`, the `bin/bootstrap-worktree` shell script — under [MIT](./LICENSES/MIT.txt).
+- Project-authored prose (READMEs, agent configs, planning, research notes, bibliography, this README, the NOTICE) under [CC BY 4.0](./LICENSES/CC-BY-4.0.txt).
+- [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md), adapted from Contributor Covenant, under [CC BY-SA 4.0](./LICENSES/CC-BY-SA-4.0.txt).
+- Hand-authored infrastructure config and data (Makefile, `lakefile.toml`, `pyproject.toml`, YAML, JSONC, dotfiles, cspell word list, JSON schemas, fixture data) under MIT via the root `REUSE.toml` config-group annotation.
+- Generated artifacts (`lake-manifest.json`, `lean-toolchain`, `uv.lock`) dedicated to the public domain under [CC0 1.0](./LICENSES/CC0-1.0.txt) via the `REUSE.toml` generated-group annotation.
+- Bundled third-party reference material under `references/papers/**` and `references/transcriptions/**` under [`LicenseRef-Reference-Material`](./LICENSES/LicenseRef-Reference-Material.txt); copyright remains with original authors and publishers.
+
+See [`NOTICE`](./NOTICE) and the combination of per-file SPDX headers plus root [`REUSE.toml`](./REUSE.toml) annotations for the authoritative coverage. See <https://reuse.software/> for tooling.
