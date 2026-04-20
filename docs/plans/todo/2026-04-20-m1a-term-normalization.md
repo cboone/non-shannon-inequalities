@@ -4,21 +4,21 @@ Implementation plan for milestone M1a of the Track A Discovery Roadmap (`docs/pl
 
 ## Context
 
-The M0 bootstrap landed `NonShannon/Inequality/Canonical.lean` with a minimal `canonicalize` that only normalizes the overall sign: `canonicalize v = v.normalizeSign`. Meanwhile, the Python side's `canonicalize_candidate` in `src/non_shannon_search/canonical.py` already combines duplicate terms, sorts them by `(len(subset), subset)`, and flips the overall sign. That asymmetry is a standing hazard because any Lean-side fixture canonicalized before M1a disagrees with its Python round-trip whenever duplicate terms or unsorted subsets are present.
+The M0 bootstrap landed `NonShannon/Inequality/Canonical.lean` with a minimal `canonicalize` that only normalizes the overall sign: `canonicalize v = v.normalizeSign`. Meanwhile, the Python side's `canonicalize_candidate` in `src/non_shannon_search/canonical.py` already combines duplicate terms, sorts them by `(len(subset), subset)`, and flips the overall sign. That asymmetry is a standing hazard. The tracked Zhang-Yeung artifacts are still in the bootstrap sign convention, so they do not yet form an M1a canonical baseline.
 
-M1a closes the gap. It lifts the Python rule into Lean, strengthens `isCanonical` accordingly, and adds the Lean-side `example`s and Python round-trip tests that turn cross-language parity into a milestone gate.
+M1a closes the gap. It lifts the Python rule into Lean, strengthens `isCanonical` accordingly, adds the Lean-side `example`s and Python round-trip tests that turn cross-language parity into a milestone gate, and performs one coordinated re-emission of the Zhang-Yeung JSON fixture and Lean mirror into the new canonical baseline.
 
 M1a does not touch `VariableRelabeling` or introduce group actions; the upgrade to a bijection-carrying relabeling is M1b's scope.
 
 ## Goal
 
-After M1a, the following identity holds by `example` on the Zhang-Yeung fixture and by `pytest` on round-tripped JSON:
+After M1a, the following identity holds by `example` on the regenerated Zhang-Yeung Lean mirror and by `pytest` on round-tripped JSON:
 
 ```text
 Lean.canonicalize (Python.canonicalize_candidate v) = Lean.canonicalize v
 ```
 
-Both sides combine duplicate terms, sort by `(cardinality, lex)`, and sign-normalize to a nonnegative leading coefficient.
+Both sides combine duplicate terms, sort by `(cardinality, lex)`, and sign-normalize to a nonnegative leading coefficient. The tracked Zhang-Yeung artifacts become fixed points of that rule at milestone closure.
 
 ## Approach
 
@@ -34,6 +34,8 @@ Both sides combine duplicate terms, sort by `(cardinality, lex)`, and sign-norma
 1. No two terms share the same normalized subset; coefficients on equal subsets are combined.
 1. Terms are ordered by `(subset.cardinality, subset.vars)` under lexicographic order.
 1. The first nonzero coefficient is nonnegative.
+
+The tracked Zhang-Yeung JSON fixture and `NonShannon/Examples/ZhangYeung.lean` are treated as outputs of this canonicalizer once M1a ships. Before then, they are bootstrap artifacts, not authoritative canonical baselines.
 
 ### Algorithm
 
@@ -56,13 +58,13 @@ Add `def VariableSubset.sortKey : VariableSubset -> Nat × List Nat := fun s => 
 1. **Rewrite `canonicalize`** in `NonShannon/Inequality/Canonical.lean` as the three-pass composition. Leave the function name intact. Delete nothing that downstream modules might reference without an explicit rename.
 1. **Extend `NonShannonTest/Inequality/Canonical.lean`** with: idempotence on the Zhang-Yeung fixture; duplicate-combination on a synthetic `InequalityVector` with two terms on `[0, 2]`; sort on a synthetic vector whose terms appear out of order.
 1. **Extend `tests/test_canonical.py`** with: idempotence on Zhang-Yeung; cross-language parity (serialize Python canonical form, parse in Lean via a fixture, compare term-by-term).
-1. **Regenerate `data/fixtures/zhang-yeung.json`** only if the current fixture's term order differs from the new canonical order. Log the regeneration in `docs/research/interchange-format.md` if it happens.
+1. **Regenerate `data/fixtures/zhang-yeung.json` and update `NonShannon/Examples/ZhangYeung.lean`** through the M1a canonicalizer. This regeneration is expected once at milestone closure because the tracked bootstrap fixture is not yet in the M1a canonical sign convention. Log the regeneration in `docs/research/interchange-format.md`.
 1. **Run `make check`.** Resolve any downstream breakage; do not suppress warnings.
 
 ## Files touched
 
-- Modified: `NonShannon/Inequality/Subsets.lean`, `NonShannon/Inequality/Vector.lean`, `NonShannon/Inequality/Canonical.lean`, `NonShannonTest/Inequality/Canonical.lean`, `tests/test_canonical.py`.
-- Possibly modified: `data/fixtures/zhang-yeung.json`, `docs/research/interchange-format.md`.
+- Modified: `NonShannon/Inequality/Subsets.lean`, `NonShannon/Inequality/Vector.lean`, `NonShannon/Inequality/Canonical.lean`, `NonShannon/Examples/ZhangYeung.lean`, `NonShannonTest/Inequality/Canonical.lean`, `tests/test_canonical.py`.
+- Modified at milestone closure: `data/fixtures/zhang-yeung.json`, `docs/research/interchange-format.md`.
 - Not modified: `NonShannon/Inequality/Subsets.lean`'s public structure, Python canonicalization semantics, `VariableRelabeling` (that's M1b).
 
 ## Testing and verification
@@ -71,10 +73,10 @@ Milestone gate: `lake build NonShannon`, `lake lint`, `lake test`, `make py-test
 
 Sanity checks beyond the default suite:
 
-- Lean `example`: `canonicalize zhangYeungAveragedScaled.vector = zhangYeungAveragedScaled.vector` (fixture is already in canonical form, so idempotence is direct).
+- Lean `example`: `canonicalize zhangYeungAveragedScaled.vector = zhangYeungAveragedScaled.vector` after `NonShannon/Examples/ZhangYeung.lean` has been re-emitted through the M1a canonicalizer.
 - Lean `example`: for a synthetic vector `v` with two terms on `[0, 2]` carrying coefficients `1` and `-1`, `canonicalize v` produces a vector with zero terms on `[0, 2]` (merged, then dropped as zero-coefficient).
 - Python `pytest`: `canonicalize_candidate(canonicalize_candidate(c)) == canonicalize_candidate(c)`.
-- Cross-language: build a small tracked test payload (possibly just Zhang-Yeung), canonicalize in Python, serialize; in Lean, construct the same vector, canonicalize, check term-by-term equality against the parsed Python output.
+- Cross-language: build a small tracked test payload (Zhang-Yeung is enough), canonicalize in Python, serialize; in Lean, construct the same vector, canonicalize, check term-by-term equality against the parsed Python output. The JSON fixture and Lean mirror are each expected to match that regenerated output at milestone closure.
 
 ## Commit strategy
 
@@ -91,9 +93,9 @@ Prefer small commits at each logical boundary:
 
 - **Dropping zero-coefficient terms.** The Python rule drops terms whose combined coefficient is zero. Lean should do the same; confirm this is captured in the duplicate-combination pass.
 - **Stability of the sort.** `List.mergeSort` in Mathlib is stable, but the key here is total, so stability does not matter for output equality. Leave a note in the canonicalization module that the sort is total on non-duplicate keys after the dedup pass.
-- **Zhang-Yeung fixture is already canonical.** Running the new canonicalizer on it should be a no-op. If it changes the JSON, M1a either has a bug or the fixture was malformed; either way, do not silently rewrite the fixture without updating `docs/research/interchange-format.md`.
+- **Bootstrap fixture re-emission.** Running the new canonicalizer on Zhang-Yeung is expected to change the tracked artifacts once, because the bootstrap fixture is not yet in the M1a canonical sign convention. That rewrite is part of the milestone, not evidence of a bug, but it must be coordinated across the JSON fixture, the Lean mirror, and `docs/research/interchange-format.md`.
 - **Performance.** M1a's cost is `O(k log k)` per canonicalization for `k` terms. Not a bottleneck for Zhang-Yeung (`k = 12`) and not expected to be one through M5. Benchmarking is M1b/M1c territory when the group action multiplies the term count by orbit size.
 
 ## Why this shape is the right adaptation
 
-M1a is deliberately narrow: it is the minimum work that removes the Lean-Python canonicalization asymmetry. Folding symmetry or orbit work into this subphase would put the `VariableRelabeling` upgrade and orbit-ID plumbing behind a single checkpoint, which is the failure mode the M1 split is meant to avoid. By shipping M1a first, M1b starts from a known-good within-inequality canonical form, and M1c starts from a known-good `Equiv.Perm`-based action.
+M1a is deliberately narrow: it is the minimum work that removes the Lean-Python canonicalization asymmetry. Folding symmetry or orbit work into this subphase would put the `VariableRelabeling` upgrade and orbit-ID plumbing behind a single checkpoint, which is the failure mode the M1 split is meant to avoid. By shipping M1a first, M1b starts from a known-good within-inequality canonical form, and M1c starts from a known-good scoped symmetry action.

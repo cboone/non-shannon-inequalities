@@ -12,6 +12,7 @@
 - **Strategy:** copy-lemma-guided inequality search with an external redundancy LP oracle and Lean-side validation of survivors.
 - **Dependency:** permanent PFR dependency (`teorth/pfr`, pin `80daaf1`) for the Shannon entropy API.
 - **Naming:** Lean library `NonShannon`, sibling test library `NonShannonTest`, Python package `non_shannon_search`.
+- **M1 contracts:** M1a owns the canonical-baseline reset for tracked fixtures; M1b exports a scoped raw symmetry action tied to `variableCount` and preserving range validity; M1c adds `orbitCanonical` and `orbit_id` while retaining `symmetry_orbit_size` as optional supplementary metadata.
 - **Track B:** finite-group correspondence work (Chan-Yeung 2002) is deferred to a future roadmap; see Section 9.
 
 ## 1. Context
@@ -111,9 +112,9 @@ The shared JSON schemas under `schemas/` are the contract. Lean mirrors live in 
 ### Core (M0 to M5)
 
 - **M0 (shipped):** repository scaffold, shared schemas, Zhang-Yeung reference fixture. Documented in `docs/plans/done/2026-04-18-bootstrap-repo.md`.
-- **M1a:** term normalization and sparse-vector canonical form. Duplicate-term combination, subset-sorted term ordering, and sign normalization all inside a single inequality. Lean-side parity with the existing Python `canonicalize_candidate`.
-- **M1b:** symmetry group actions. `Equiv.Perm Var` action on `VariableSubset`, `InequalityTerm`, and `InequalityVector`; group-action laws by `example`; `VariableRelabeling` upgraded from a bare function to a bijection-carrying structure.
-- **M1c:** orbit canonicalization and duplicate-term combination across symmetry. Compose M1a and M1b into an orbit-representative selection; plumb orbit IDs through `CandidateInequality` and the JSON schema; cross-language round-trip stability on the Zhang-Yeung fixture under non-trivial `S_4` action.
+- **M1a:** term normalization and sparse-vector canonical form. Duplicate-term combination, subset-sorted term ordering, and sign normalization all inside a single inequality, plus one coordinated re-emission of the Zhang-Yeung JSON fixture and Lean mirror into the new canonical baseline. Lean-side parity with the existing Python `canonicalize_candidate`.
+- **M1b:** symmetry group actions. Scoped relabeling action on `VariableSubset`, `InequalityTerm`, and `InequalityVector`, tied to the vector's declared `variableCount`; group-action laws by `example`; `VariableRelabeling` upgraded from a bare function to a bijection-carrying structure that preserves range validity of in-range variable references.
+- **M1c:** orbit canonicalization across symmetry. Compose M1a and M1b into an orbit-representative companion `orbitCanonical`; plumb orbit IDs through `CandidateInequality` and the JSON schema while retaining `symmetry_orbit_size` as separate optional metadata; cross-language round-trip stability on the Zhang-Yeung fixture under non-trivial `S_4` action.
 - **M2:** parameterized copy-lemma statement layer replacing the bootstrap placeholder `parameterizedCopyLemma`. Typed parameter objects for frozen, copied, and conditioning variable blocks; stable statement shape that downstream search code can target.
 - **M3:** redundancy-certificate oracle boundary. Backend interface beyond `NotImplementedBackend`; initial certificate semantics for source combinations; explicit `lean_checkable` policy.
 - **M4:** known-inequality reproduction. Zhang-Yeung 1998 eq. (21) / eq. (23), p. 1445 (already present); six DFZ inequalities from Dougherty-Freiling-Zeger 2011 (arXiv:1104.3602, Theorems 3.1 to 3.6); first three Matús small cases from Matús 2007 TIT (Section III, pp. 323-324).
@@ -145,7 +146,7 @@ non-shannon-inequalities/
       Subsets.lean                VariableSubset vocabulary
       Vector.lean                 InequalityTerm and InequalityVector
       Canonical.lean              canonicalize (M1 target) and VariableRelabeling
-      Symmetry.lean               (M1 new) group action by Equiv.Perm Var
+      Symmetry.lean               (M1 new) scoped symmetry action layer
     CopyLemma/
       Parameters.lean             CopyParameters record
       Parameterized.lean          parameterizedCopyLemma (M2 target)
@@ -249,61 +250,63 @@ The original bootstrap roadmap carried a single M1 covering four coupled deliver
 
 The three subphases must ship in order (M1a, then M1b, then M1c); no parallelism between them.
 
-### M1a: Term normalization and sparse-vector canonical form
+### M1a: Term normalization, sparse-vector canonical form, and baseline reset
 
-One-line summary: lift the within-inequality canonical form (duplicate-term combination, subset-sorted term ordering, sign normalization) into Lean, matching the existing Python `canonicalize_candidate`.
+One-line summary: lift the within-inequality canonical form (duplicate-term combination, subset-sorted term ordering, sign normalization) into Lean, matching the existing Python `canonicalize_candidate`, then re-emit the tracked Zhang-Yeung artifacts through that rule once.
 
 **Deliverables.**
 
 - `NonShannon/Inequality/Canonical.lean`: extend `canonicalize` beyond sign normalization. Add duplicate-term combination (fold `List InequalityTerm` by `subset` with rational-coefficient summation) and subset-sorted term ordering (by subset cardinality, then lexicographically on the sorted index list). Strengthen `isCanonical` in lockstep so the predicate continues to match the canonicalizer.
 - `NonShannon/Inequality/Subsets.lean`: subset ordering helper (size-then-lex), matching the Python `subset_sort_key`. Optional small lemma on sort stability.
 - `NonShannon/Inequality/Vector.lean`: helper for merging two `InequalityTerm` values with the same normalized subset. Basic lemmas about the enriched `canonicalize`.
+- `data/fixtures/zhang-yeung.json` and `NonShannon/Examples/ZhangYeung.lean`: re-emitted through the M1a canonicalizer so the tracked reference fixture and Lean mirror share one canonical baseline.
 - `src/non_shannon_search/canonical.py`: already implements the rule. Add cross-language parity checks.
 - `VariableRelabeling` stays a bare function in this subphase; its upgrade to a bijection-carrying structure is M1b.
 
-**Why now.** M0 left Lean's `canonicalize` doing sign-normalization only, while Python's `canonicalize_candidate` already combines duplicates and sorts. That asymmetry is already a hazard: any Lean-side fixture canonicalized before M1a will disagree with its Python round-trip. M1a closes the gap before M1b introduces group actions that would compose the asymmetry.
+**Why now.** M0 left Lean's `canonicalize` doing sign-normalization only, while Python's `canonicalize_candidate` already combines duplicates and sorts. That asymmetry is already a hazard, and the tracked Zhang-Yeung artifacts are still in the bootstrap sign convention rather than the planned M1a canonical form. M1a closes the gap before M1b introduces group actions that would compose the asymmetry.
 
-**Testing approach.** `NonShannonTest/Inequality/Canonical.lean` extended (from the M0 smoke test) with: idempotence (`canonicalize (canonicalize v) = canonicalize v`) by `example`, duplicate-combination on a synthetic `InequalityVector` with two terms on the same subset, and a Zhang-Yeung round-trip (`canonicalize zhangYeungAveragedScaled.vector = zhangYeungAveragedScaled.vector`). Python: extend `tests/test_canonical.py` with idempotence and cross-language parity on the Zhang-Yeung fixture (Lean canonical form equal to Python canonical form serialized through JSON).
+**Testing approach.** `NonShannonTest/Inequality/Canonical.lean` extended (from the M0 smoke test) with: idempotence (`canonicalize (canonicalize v) = canonicalize v`) by `example`, duplicate-combination on a synthetic `InequalityVector` with two terms on the same subset, sorting on a deliberately scrambled synthetic vector, and then a Zhang-Yeung fixed-point check after the Lean mirror has been re-emitted through the M1a canonicalizer. Python: extend `tests/test_canonical.py` with idempotence and cross-language parity on the regenerated Zhang-Yeung fixture (Lean canonical form equal to Python canonical form serialized through JSON).
 
-**Checkpoint gate.** `lake build NonShannon`, `lake lint`, `lake test`, `make py-test` green. Concrete sanity check: `canonicalize` is idempotent on a randomized input (a Lean `example` constructing a scrambled form of the Zhang-Yeung fixture and asserting equality after one pass), and Zhang-Yeung canonical JSON output from Python matches Lean's canonical form term-by-term.
+**Checkpoint gate.** `lake build NonShannon`, `lake lint`, `lake test`, `make py-test` green. Concrete sanity check: `canonicalize` is idempotent on a randomized input (a Lean `example` constructing a scrambled form of the Zhang-Yeung fixture and asserting equality after one pass), the tracked Zhang-Yeung JSON fixture and Lean mirror are each regenerated once through the M1a canonicalizer and then become fixed points of it, and Python's canonical JSON output matches Lean's canonical form term-by-term.
 
 **Plan file:** `docs/plans/todo/2026-04-20-m1a-term-normalization.md`.
 
 ### M1b: Symmetry group actions
 
-One-line summary: define the `Equiv.Perm Var` action on subsets, terms, and vectors; prove the group-action laws by `example`; upgrade `VariableRelabeling` from a bare function to a bijection-carrying structure.
+One-line summary: define a scoped symmetry action on subsets, terms, and vectors; prove the group-action laws by `example`; upgrade `VariableRelabeling` from a bare function to a bijection-carrying structure that preserves range validity for a declared `variableCount`.
 
 **Deliverables.**
 
-- `NonShannon/Inequality/Symmetry.lean` (new): `actOnSubset : Equiv.Perm Var -> VariableSubset -> VariableSubset`, `actOnTerm`, `actOnVector`, each composing with the M1a canonicalizer to return a normalized output. `VariableSubset.isNormalized` preservation lemmas (after re-normalization).
-- `NonShannon/Inequality/Canonical.lean`: upgrade `VariableRelabeling` to wrap `Equiv.Perm Var` (or a finite-index specialization); update `applySubset` and `applyVector` to re-normalize output (permutations do not preserve subset index order).
-- `src/non_shannon_search/symmetry.py` (new): `apply_subset(perm, subset)`, `apply_term(perm, term)`, `apply_candidate(perm, candidate)`; permutation generation helpers (identity, transpositions, full `S_n` enumeration for small `n`).
+- `NonShannon/Inequality/Symmetry.lean` (new): `actOnSubset`, `actOnTerm`, `actOnVector` on top of a public `VariableRelabeling` surface that is scoped to a declared `variableCount` and acts only on in-range variables. The action is raw, not orbit-canonicalized; callers compose with M1a `canonicalize` when they need normalized comparison.
+- `NonShannon/Inequality/Subsets.lean` and `NonShannon/Inequality/Vector.lean`: range validity predicates asserting that subset indices lie in the declared range and that an inequality vector references only in-range variables.
+- `NonShannon/Inequality/Canonical.lean`: upgrade `VariableRelabeling` from a bare function to a scoped bijection-carrying structure; keep equality checks phrased as `canonicalize (actOnVector relabeling v)` rather than claiming raw action outputs are already canonical.
+- `src/non_shannon_search/symmetry.py` (new): `apply_subset`, `apply_term`, `apply_candidate`; scoped permutation helpers (identity, transpositions, full `S_n` enumeration for small `n`) represented in a form that is validated against the candidate's `variable_count`.
 
-**Why now.** M1a gave a stable within-inequality canonical form. M1b now defines the group action on top of that form, with the guarantee that action outputs re-enter the canonical layer correctly. Without M1a, equality checks under the action are unreliable; that is why M1b cannot ship before M1a.
+**Why now.** M1a gave a stable within-inequality canonical form. M1b now defines the raw symmetry action on top of that form, with the guarantee that inputs whose variables stay inside the declared range continue to do so and that equality checks happen after re-entering the canonical layer. Without M1a, equality checks under the action are unreliable; without an explicit range discipline, the action can manufacture out-of-range variable references that do not match the vector's declared `variableCount`.
 
-**Testing approach.** `NonShannonTest/Inequality/Symmetry.lean` (new) covers identity-action law (`actOnVector 1 v = v` after canonicalization), composition law (`actOnVector (p * q) v = actOnVector p (actOnVector q v)`), and action on the Zhang-Yeung fixture under a named transposition (say `swap 0 1`). Python: `tests/test_symmetry.py` (new) mirrors the identity and composition laws and verifies that applying any `S_4` element to the Zhang-Yeung fixture followed by Python `canonicalize_candidate` produces a result whose canonical form depends only on the orbit, not on the specific element.
+**Testing approach.** `NonShannonTest/Inequality/Symmetry.lean` (new) covers identity-action law (`canonicalize (actOnVector 1 v) = canonicalize v`), composition law after canonicalization, preservation of vector range validity, and action on the Zhang-Yeung fixture under a named transposition (say `swap 0 1`). Python: `tests/test_symmetry.py` (new) mirrors the identity and composition laws, checks that scoped relabelings preserve range validity, and verifies Lean/Python parity for the same named transposition after canonicalization.
 
-**Checkpoint gate.** `lake build NonShannon`, `lake lint`, `lake test`, `make py-test` green. Concrete sanity check: identity and composition laws hold on the Zhang-Yeung fixture in both languages; applying the same non-identity permutation to the Zhang-Yeung fixture in Lean and in Python produces the same canonical output (serialized via JSON for comparison).
+**Checkpoint gate.** `lake build NonShannon`, `lake lint`, `lake test`, `make py-test` green. Concrete sanity check: identity and composition laws hold on the Zhang-Yeung fixture in both languages after canonicalization; applying the same in-range non-identity relabeling to the Zhang-Yeung fixture in Lean and in Python preserves range validity; and the two raw outputs agree after canonicalization (serialized via JSON for comparison).
 
 **Plan file:** `docs/plans/todo/2026-04-20-m1b-symmetry-actions.md`.
 
 ### M1c: Orbit canonicalization and duplicate-term combination
 
-One-line summary: compose M1a's within-inequality canonical form and M1b's group action into an orbit-representative canonical form; plumb orbit IDs through `CandidateInequality` and the JSON schema.
+One-line summary: compose M1a's within-inequality canonical form and M1b's scoped raw action into an orbit-representative companion `orbitCanonical`; plumb orbit IDs through `CandidateInequality` and the JSON schema while retaining `symmetry_orbit_size` as optional supplementary metadata.
 
 **Deliverables.**
 
-- `NonShannon/Inequality/Canonical.lean`: extend `canonicalize` (or add a companion `orbitCanonical`) that, after within-inequality normalization, selects the orbit representative under the `S_n` action by enumerating the orbit and returning the lex-minimum canonical form. Strengthen `isCanonical` to the orbit-invariant version.
-- `NonShannon/Certificate/Schema.lean`: add an `orbitId : Option String` (or similar) field on `CandidateInequality`, populated by the canonicalizer. Use a deterministic hash of the orbit-representative term list.
-- `schemas/candidate-inequality.schema.json`: schema revision adding the `orbit_id` field. Update Python mirror in `src/non_shannon_search/schema.py`. Migration note in `docs/research/interchange-format.md`.
-- `src/non_shannon_search/canonical.py`: extend with orbit-representative selection matching the Lean rule; update `CandidateInequality` dataclass if needed.
-- `data/fixtures/zhang-yeung.json`: regenerate to include the new `orbit_id` field.
+- `NonShannon/Inequality/Canonical.lean`: add a companion `orbitCanonical` that, after within-inequality normalization, selects the orbit representative under the scoped `S_n` action by enumerating the orbit and returning the lex-minimum canonical form. `canonicalize` stays the M1a within-inequality operation.
+- `NonShannon/Certificate/Schema.lean`: add an `orbitId : Option String` field on `CandidateInequality`, populated from `orbitCanonical`. Use the deterministic canonical serialization string of the orbit representative. Retain `symmetryOrbitSize?` as a separate optional field for externally computed orbit-size metadata.
+- `schemas/candidate-inequality.schema.json`: schema revision adding the `orbit_id` field while preserving `symmetry_orbit_size`. Update Python mirror in `src/non_shannon_search/schema.py`. Migration note in `docs/research/interchange-format.md`.
+- `src/non_shannon_search/canonical.py`: extend with orbit-representative selection matching the Lean rule and an `orbit_id` helper; update `CandidateInequality` dataclass accordingly.
+- `data/fixtures/zhang-yeung.json`: regenerate to include the new `orbit_id` field without changing the meaning of `symmetry_orbit_size`.
 
-**Why now.** M1a and M1b are the inputs; M1c is the integrating step. Downstream milestones treat "two inequalities that differ by a variable relabeling" as "the same inequality," and that equality only becomes decidable once M1c ships. M5 in particular cannot dedup search output without an orbit ID, and M4's known-inequality reproduction needs orbit IDs to verify that two forms of the same DFZ inequality canonicalize identically.
+**Why now.** M1a and M1b are the inputs; M1c is the integrating step. Downstream milestones treat "two inequalities that differ by a variable relabeling" as "the same inequality," and that equality only becomes decidable once M1c ships. The integrating notion is `orbitCanonical`, not the raw M1b action output. M5 in particular cannot dedup search output without an orbit ID, and M4's known-inequality reproduction needs orbit IDs to verify that two forms of the same DFZ inequality canonicalize identically.
 
-**Testing approach.** `NonShannonTest/Inequality/Orbit.lean` (new): orbit-invariance of the orbit ID on the Zhang-Yeung fixture under every element of a small generating set for `S_4`; equality of orbit representatives on two permuted forms of the same fixture. Extend `NonShannonTest/Inequality/Canonical.lean` with an orbit-idempotence `example`. Python: extend `tests/test_canonical.py` with the same orbit-invariance checks; extend `tests/test_symmetry.py` with cross-language parity of orbit IDs.
+**Testing approach.** `NonShannonTest/Inequality/Orbit.lean` (new): orbit-invariance of the orbit ID on the Zhang-Yeung fixture under every element of a small generating set for `S_4`; equality of orbit representatives on two permuted forms of the same fixture; coexistence of the new `orbitId` field with the pre-existing optional `symmetryOrbitSize?` field. Extend `NonShannonTest/Inequality/Canonical.lean` with an orbit-idempotence `example`. Python: extend `tests/test_canonical.py` with the same orbit-invariance checks; extend `tests/test_symmetry.py` with cross-language parity of orbit IDs.
 
-**Checkpoint gate.** `lake build NonShannon`, `lake lint`, `lake test`, `make py-test` green. Concrete sanity check: applying any non-trivial element of `S_4` to the Zhang-Yeung fixture produces a value whose orbit ID equals the original's orbit ID, and Lean's and Python's orbit IDs on the fixture agree byte-for-byte. Schema revision landed with a migration note; `data/fixtures/zhang-yeung.json` re-emitted through the new pipeline validates against the revised schema.
+**Checkpoint gate.** `lake build NonShannon`, `lake lint`, `lake test`, `make py-test` green. Concrete sanity check: applying any non-trivial element of `S_4` to the Zhang-Yeung fixture and then passing through `orbitCanonical` produces a value whose orbit ID equals the original's orbit ID, Lean's and Python's orbit IDs on the fixture agree byte-for-byte, and the schema revision lands with a migration note while preserving the validity and meaning of the existing `symmetry_orbit_size` field.
 
 **Plan file:** `docs/plans/todo/2026-04-20-m1c-orbit-canonicalization.md`.
 
@@ -435,9 +438,9 @@ Track A cites Zhang-Yeung 1998 via the sibling project's verified transcription.
 **Per-milestone test coverage.**
 
 - **M0 (shipped):** `NonShannonTest/Prelude.lean`, `NonShannonTest/Inequality/{Vector,Canonical}.lean`, `NonShannonTest/Certificate/Schema.lean`, `NonShannonTest/CopyLemma/Parameters.lean`, `NonShannonTest/Catalog.lean`, `NonShannonTest/Examples/ZhangYeung.lean`; Python `tests/test_schema.py`, `tests/test_canonical.py`, `tests/test_emit_lean.py`.
-- **M1a:** extend `NonShannonTest/Inequality/Canonical.lean` with idempotence, duplicate-combination, and Zhang-Yeung round-trip `example`s. Python: extend `tests/test_canonical.py` with idempotence and cross-language parity.
-- **M1b:** add `NonShannonTest/Inequality/Symmetry.lean` (identity and composition laws, Zhang-Yeung under a named transposition). Python: add `tests/test_symmetry.py`.
-- **M1c:** add `NonShannonTest/Inequality/Orbit.lean` (orbit-invariance and cross-language orbit-ID parity); extend `NonShannonTest/Inequality/Canonical.lean` with an orbit-idempotence `example`. Python: extend `tests/test_canonical.py` and `tests/test_symmetry.py` with orbit-ID parity checks.
+- **M1a:** extend `NonShannonTest/Inequality/Canonical.lean` with idempotence, duplicate-combination, sorting, and Zhang-Yeung fixed-point `example`s after the fixture and Lean mirror are re-emitted through the M1a canonicalizer. Python: extend `tests/test_canonical.py` with idempotence and cross-language parity.
+- **M1b:** add `NonShannonTest/Inequality/Symmetry.lean` (identity and composition laws after canonicalization, preservation of range validity, Zhang-Yeung under a named transposition). Python: add `tests/test_symmetry.py`.
+- **M1c:** add `NonShannonTest/Inequality/Orbit.lean` (orbit-invariance and cross-language orbit-ID parity); extend `NonShannonTest/Inequality/Canonical.lean` with an orbit-idempotence `example`; extend `NonShannonTest/Certificate/Schema.lean` if needed to cover coexistence of `orbitId` with `symmetryOrbitSize?`. Python: extend `tests/test_canonical.py` and `tests/test_symmetry.py` with orbit-ID parity checks.
 - **M2:** extend `NonShannonTest/CopyLemma/Parameters.lean`; add `NonShannonTest/CopyLemma/Parameterized.lean`.
 - **M3:** extend `NonShannonTest/Certificate/Schema.lean`; add `NonShannonTest/Certificate/Oracle.lean`. Python: add `tests/test_redundancy_lp.py`.
 - **M4:** add `NonShannonTest/Examples/DFZ.lean` and `NonShannonTest/Examples/Matus.lean`; extend `tests/test_canonical.py` with DFZ and Matús fixtures.
@@ -479,17 +482,17 @@ Track A cites Zhang-Yeung 1998 via the sibling project's verified transcription.
 
 **M1a:**
 
-- Updated: `NonShannon/Inequality/Canonical.lean` (duplicate combination and subset-sorted term ordering), `NonShannon/Inequality/Subsets.lean` (subset ordering helper), `NonShannon/Inequality/Vector.lean` (term-merge helper), `NonShannonTest/Inequality/Canonical.lean` (idempotence, duplicate combination, Zhang-Yeung round-trip), `src/non_shannon_search/canonical.py` (cross-language parity notes only; rule already present), `tests/test_canonical.py` (idempotence, cross-language parity).
+- Updated: `NonShannon/Inequality/Canonical.lean` (duplicate combination and subset-sorted term ordering), `NonShannon/Inequality/Subsets.lean` (subset ordering helper), `NonShannon/Inequality/Vector.lean` (term-merge helper), `NonShannon/Examples/ZhangYeung.lean` and `data/fixtures/zhang-yeung.json` (re-emitted through the M1a canonicalizer), `NonShannonTest/Inequality/Canonical.lean` (idempotence, duplicate combination, sorting, Zhang-Yeung fixed-point), `src/non_shannon_search/canonical.py` (cross-language parity notes only; rule already present), `tests/test_canonical.py` (idempotence, cross-language parity).
 
 **M1b:**
 
 - New: `NonShannon/Inequality/Symmetry.lean`, `NonShannonTest/Inequality/Symmetry.lean`, `src/non_shannon_search/symmetry.py`, `tests/test_symmetry.py`.
-- Updated: `NonShannon/Inequality/Canonical.lean` (`VariableRelabeling` upgraded to a bijection-carrying structure), `NonShannonTest/Inequality/Canonical.lean`.
+- Updated: `NonShannon/Inequality/Subsets.lean` and `NonShannon/Inequality/Vector.lean` (range validity predicates), `NonShannon/Inequality/Canonical.lean` (`VariableRelabeling` upgraded to a scoped bijection-carrying structure), `NonShannonTest/Inequality/Canonical.lean`.
 
 **M1c:**
 
 - New: `NonShannonTest/Inequality/Orbit.lean`.
-- Updated: `NonShannon/Inequality/Canonical.lean` (orbit-representative selection), `NonShannon/Certificate/Schema.lean` (orbit-ID field), `schemas/candidate-inequality.schema.json` (schema revision), `src/non_shannon_search/schema.py`, `src/non_shannon_search/canonical.py`, `data/fixtures/zhang-yeung.json` (regenerated through the revised pipeline), `docs/research/interchange-format.md` (migration note), `tests/test_canonical.py`, `tests/test_symmetry.py`.
+- Updated: `NonShannon/Inequality/Canonical.lean` (`orbitCanonical` companion and orbit-ID serialization), `NonShannon/Certificate/Schema.lean` (orbit-ID field while retaining `symmetryOrbitSize?`), `schemas/candidate-inequality.schema.json` (schema revision preserving `symmetry_orbit_size`), `src/non_shannon_search/schema.py`, `src/non_shannon_search/canonical.py`, `data/fixtures/zhang-yeung.json` (regenerated through the revised pipeline), `docs/research/interchange-format.md` (migration note), `tests/test_canonical.py`, `tests/test_symmetry.py`.
 
 **M2:**
 
