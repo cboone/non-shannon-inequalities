@@ -1,6 +1,3 @@
-<!-- SPDX-FileCopyrightText: 2026 Christopher Boone -->
-<!-- SPDX-License-Identifier: CC-BY-4.0 -->
-
 # Non-Shannon Inequalities
 
 A hybrid Lean 4 plus Python research repository for discovering, classifying, and validating non-Shannon information inequalities.

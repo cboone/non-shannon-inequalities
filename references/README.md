@@ -1,9 +1,3 @@
-<!--
-SPDX-FileCopyrightText: 2026 Christopher Boone
-
-SPDX-License-Identifier: CC-BY-4.0
--->
-
 # References
 
 Source PDFs, bibliography entries, and future transcriptions for the non-Shannon inequality program.

@@ -1,9 +1,3 @@
-<!--
-SPDX-FileCopyrightText: 2026 Christopher Boone
-
-SPDX-License-Identifier: CC-BY-SA-4.0
--->
-
 # Contributor Covenant 3.0 Code of Conduct
 
 ## Our Pledge

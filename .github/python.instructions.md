@@ -1,8 +1,4 @@
 ---
-# SPDX-FileCopyrightText: 2026 Christopher Boone
-#
-# SPDX-License-Identifier: CC-BY-4.0
-
 applyTo: "src/non_shannon_search/**/*.py"
 ---
 
