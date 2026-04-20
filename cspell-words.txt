@@ -32,6 +32,8 @@ jsonschema
 Kaced
 kacedromashchenko
 lakefile
+leanc
+Leanc
 leanprover
 linarith
 lockfile
