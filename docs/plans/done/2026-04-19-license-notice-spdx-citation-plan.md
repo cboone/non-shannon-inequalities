@@ -1,6 +1,3 @@
-<!-- SPDX-FileCopyrightText: 2026 Christopher Boone -->
-<!-- SPDX-License-Identifier: CC-BY-4.0 -->
-
 # 2026-04-19 License, Notice, SPDX, and Citation Plan
 
 ## Context

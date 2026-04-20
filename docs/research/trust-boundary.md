@@ -1,9 +1,3 @@
-<!--
-SPDX-FileCopyrightText: 2026 Christopher Boone
-
-SPDX-License-Identifier: CC-BY-4.0
--->
-
 # Trust Boundary
 
 Track A will eventually depend on components with different trust levels.

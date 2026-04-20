@@ -10,10 +10,12 @@ checkdecls
 codepoint
 cond
 cooldown
+Coraline
 docstring
 docstrings
 Dougherty
 doughertyfreilingzeger
+Ehmke
 entropic
 extensionless
 Farkas
@@ -30,10 +32,13 @@ jsonschema
 Kaced
 kacedromashchenko
 lakefile
+leanc
+Leanc
 leanprover
 linarith
 lockfile
 lockfiles
+Makefiles
 Mathlib
 Mathlib's
 Matús
@@ -45,6 +50,7 @@ PFR
 polymatroid
 polyhedrality
 psitip
+pycache
 pyproject
 pytest
 readlink

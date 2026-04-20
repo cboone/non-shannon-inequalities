@@ -1,9 +1,3 @@
-<!--
-SPDX-FileCopyrightText: 2026 Christopher Boone
-
-SPDX-License-Identifier: CC-BY-4.0
--->
-
 # Security Policy
 
 ## Reporting a Vulnerability

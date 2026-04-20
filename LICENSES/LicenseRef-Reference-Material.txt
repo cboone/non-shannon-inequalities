@@ -1,0 +1,5 @@
+This repository bundles certain PDFs and verbatim transcriptions under `references/papers/` and `references/transcriptions/` as reference material for study, verification, and scholarly context.
+
+No copyright license to modify, redistribute, or republish those materials is granted by this repository. Copyright remains with the original authors and/or publishers, as identified in the materials themselves.
+
+Where use beyond local reference, quotation, or other applicable legal exceptions is desired, consult the original publication or publisher for the governing terms.
