@@ -1,0 +1,86 @@
+version = 1
+
+# Prose: NOTICE, READMEs, agent configs, planning documents, research
+# notes, and project-curated bibliographic metadata. Covered via this
+# group, never inline SPDX on Markdown. CODE_OF_CONDUCT.md is scoped
+# out via a dedicated override below.
+[[annotations]]
+path = [
+  "NOTICE",
+  "README.md",
+  "AGENTS.md",
+  "CLAUDE.md",
+  "CONTRIBUTING.md",
+  ".github/**/*.md",
+  "docs/**/*.md",
+  "references/README.md",
+  "references/papers.bib",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Christopher Boone"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+# Infrastructure config: Makefiles, TOML, YAML (including CI
+# workflows), JSONC, dotfiles, word lists, hand-authored JSON schemas,
+# and hand-authored fixture data. Hand-authored or tool-merged, but
+# not substantive source code: SPDX is ceremony, so one glob.
+[[annotations]]
+path = [
+  "Makefile",
+  "**/*.toml",
+  "**/*.yaml",
+  "**/*.yml",
+  "**/*.jsonc",
+  ".editorconfig",
+  ".gitignore",
+  "cspell-words.txt",
+  "REUSE.toml",
+  "schemas/**/*.schema.json",
+  "data/fixtures/**/*.json",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Christopher Boone"
+SPDX-License-Identifier = "MIT"
+
+# Generated artifacts: lock files and pinned versions. CC0 is the
+# honest framing for mechanical content the project does not
+# originate.
+[[annotations]]
+path = [
+  "lake-manifest.json",
+  "lean-toolchain",
+  "uv.lock",
+]
+precedence = "override"
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "CC0-1.0"
+
+# Structural placeholders.
+[[annotations]]
+path = ["**/.gitkeep"]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Christopher Boone"
+SPDX-License-Identifier = "MIT"
+
+# Code of Conduct: adapted from the Contributor Covenant, which is
+# itself under CC-BY-SA-4.0. Override the prose group for this one
+# file.
+[[annotations]]
+path = ["CODE_OF_CONDUCT.md"]
+precedence = "override"
+SPDX-FileCopyrightText = "2020 Coraline Ada Ehmke; 2026 Christopher Boone"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+# Third-party bundled reference material. Copyright remains with the
+# original authors and publishers; this repository does not grant a
+# redistribution license. Pre-wired for future additions under
+# references/papers/ and references/transcriptions/; both directories
+# are currently placeholders.
+[[annotations]]
+path = [
+  "references/papers/**",
+  "references/transcriptions/**",
+]
+precedence = "override"
+SPDX-FileCopyrightText = "Original authors and publishers"
+SPDX-License-Identifier = "LicenseRef-Reference-Material"
