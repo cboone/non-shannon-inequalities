@@ -1,4 +1,7 @@
 #!/usr/bin/env zsh
+# SPDX-FileCopyrightText: 2026 Christopher Boone
+#
+# SPDX-License-Identifier: MIT
 
 setopt ERR_EXIT NO_UNSET PIPE_FAIL
 
