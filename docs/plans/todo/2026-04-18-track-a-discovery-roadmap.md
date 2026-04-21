@@ -38,7 +38,16 @@ Already upstream and directly usable (verified 2026-04-19 against PFR pin `80daa
 
 ### 2.2 `cboone/zhang-yeung-inequality` (sibling project)
 
-The sibling repository is a single-theorem Lean 4 formalization of Zhang-Yeung 1998 Theorem 3, structured as a 6-milestone roadmap (`~/Development/zhang-yeung-inequality/docs/plans/todo/2026-04-15-zhang-yeung-formalization-roadmap.md`). When its M3 lands, Track A can import the Zhang-Yeung theorem statement as the first Lean-checkable validator for curated catalog entries. Until then, Track A treats Zhang-Yeung as a reference fixture only (present as `NonShannon/Examples/ZhangYeung.lean`).
+The sibling repository is a Lean 4 formalization of Zhang-Yeung 1998, structured as a 6-milestone roadmap (`~/Development/zhang-yeung-inequality/docs/plans/todo/2026-04-15-zhang-yeung-formalization-roadmap.md`). As of 2026-04-20 it has shipped M0 through M4: the copy lemma (M2), Theorem 3 main inequality (M3), and Theorem 4 Shannon-cone separation together with the generic `Fin n` entropy-region surface (M4). Theorem 5 (M5) and polish (M6) are planned.
+
+**Planned lake dependency (M3 of this roadmap):** Track A will `require` the sibling project as a lake package and import `ZhangYeung.EntropyRegion` for validation of curated catalog entries. The relevant public surface is:
+
+- `ZhangYeung.zhangYeungAt_n`, `ZhangYeung.zhangYeungHolds_n`: generic `Fin n` cone predicates stating the Zhang-Yeung inequality on a set function.
+- `ZhangYeung.entropyFn_n`: the `n`-variable entropy function as a `Finset (Fin n) -> ℝ` set function, derived via the PFR entropy API.
+- `ZhangYeung.shannonCone_n`, `ZhangYeung.entropyRegion_n`, `ZhangYeung.almostEntropicRegion_n`: Shannon outer bound, entropic region, and its closure, packaged as predicates and sets.
+- `ZhangYeung.restrictFirstFour`, `ZhangYeung.restrictFirstFour_mem_entropyRegion_n`: restriction map from `Fin n` down to the first four coordinates with continuity and membership-preservation.
+
+That surface is the natural validator target for any Track A catalog entry indexed on `Fin n` entropy functions. The compatibility lemma that bridges Track A's sparse-vector `InequalityVector` representation to the sibling's set-function representation lands as a M4 deliverable (see Section 6, M4). Until M3 wires the dependency, Track A cites the sibling path only; it does not yet import its modules.
 
 **Transcription:** the sibling project has a verified transcription of Zhang-Yeung 1998 at `~/Development/zhang-yeung-inequality/references/transcriptions/zhangyeung1998.md` (verified 2026-04-16). Track A will depend on that transcription for equation-numbered citations until a local copy lands (see Section 9).
 
@@ -339,6 +348,7 @@ One-line summary: make external LP output auditable by tightening the certificat
 - `NonShannon/Certificate/Oracle.lean` (new): Lean-side adapter types mirroring the oracle boundary, with `lean_checkable = false` as the default until a checkable format is designed.
 - Tightened certificate semantics for source combinations in `NonShannon/Certificate/Schema.lean`: rational-arithmetic invariants (weights sum to a specified target, sources are all valid candidate IDs) expressed as predicates.
 - Updated `docs/research/trust-boundary.md` documenting the backend name, version string, `lean_checkable` policy, and the explicit disclaimer that an `lean_checkable = false` certificate is a provisional artifact.
+- `lakefile.toml`: add the sibling `zhang-yeung-inequality` project as a `require`d lake dependency, pinned to a specific revision. This brings the `ZhangYeung.EntropyRegion` surface (`zhangYeungHolds_n`, `entropyFn_n`, `shannonCone_n`, `entropyRegion_n`) into scope for the Lean-side oracle adapter. The compatibility lemma tying the sibling's set-function representation to Track A's sparse-vector `InequalityVector` is M4's deliverable; M3 sets up the import but does not yet consume it in proofs. Record the pin and rationale in `docs/research/trust-boundary.md`.
 
 **Why now.** M2 froze the statement layer; before M5 runs a search that generates real certificates, the shape of a certificate and the trust boundary around it must be stable. Landing M3 before M4 means known-inequality reproduction can exercise the oracle on ground-truth inequalities (Zhang-Yeung, DFZ, Matús) and catch pipeline bugs against a known answer, not against search output.
 
@@ -357,14 +367,16 @@ One-line summary: reproduce the Zhang-Yeung, DFZ-6, and first Matús cases as tr
 - `NonShannon/Examples/DFZ.lean` (new): Lean mirrors of the six Dougherty-Freiling-Zeger inequalities (Dougherty, Freiling, and Zeger 2011, Theorems 3.1 to 3.6, arXiv:1104.3602).
 - `NonShannon/Examples/Matus.lean` (new): Lean mirrors of the first three small Matús family cases (Matús 2007 TIT, Section III, pp. 323-324).
 - `data/fixtures/dfz-*.json` (six fixtures) and `data/fixtures/matus-*.json` (three fixtures).
+- `NonShannon/Inequality/EvaluateAt.lean` (new): `InequalityVector.evaluateAt (v : InequalityVector) (F : Finset (Fin v.variableCount) -> ℝ) : ℝ`, defined as the linear combination `Σ term ∈ v.terms, term.coefficient * F (toFinset term.subset)` in the joint-entropy basis. `isSatisfiedAt v F : Prop := evaluateAt v F ≤ 0`. Small API lemmas: evaluation is additive in terms, sign-normalization negates evaluation, and canonicalization preserves evaluation up to a multiplicative `±1` from the sign-normalization pass.
+- `NonShannon/Examples/ZhangYeung.lean`: sibling-compatibility theorem `zhangYeungAveragedScaled_compatible_with_sibling`, stating that for every `F ∈ ZhangYeung.entropyRegion_n 4`, `ZhangYeung.zhangYeungHolds_n F → NonShannon.isSatisfiedAt zhangYeungAveragedScaled.vector F`. Proof structure: unfold `zhangYeungHolds_n` into its four-variable Zhang-Yeung inequality at the canonical ordered 4-tuple and rearrange via `evaluateAt` into the averaged-scaled form the M1a canonicalizer emits. One concrete downstream-use `example` inside `NonShannonTest/Examples/ZhangYeung.lean` wires `restrictFirstFour_mem_entropyRegion_n` into the compatibility theorem to obtain the inequality on restricted 5-variable entropy functions, demonstrating the sibling's `Fin n → Fin 4` machinery flows through our sparse-vector layer.
 - A verified local transcription of the DFZ 2011 preprint at `references/transcriptions/doughertyfreilingzeger2011.md`, with verification date recorded. (Zhang-Yeung 1998 transcription lives in the sibling project; Track A cites it by path until a local copy is made.)
 - Optional: begin a local Zhang-Yeung 1998 transcription if the sibling project's copy is not enough.
 
 **Why now.** M1, M2, and M3 give representation, statements, and oracle. M4 is the sanity check before M5 runs a real search: every listed fixture must be non-redundant under the oracle (because each is a genuine non-Shannon inequality), must canonicalize identically in Lean and Python, and must round-trip through the schema. A bug in the pipeline that survives M3 will fail on a known input here, before search output muddies the diagnosis.
 
-**Testing approach.** `NonShannonTest/Examples/DFZ.lean` (new) and `NonShannonTest/Examples/Matus.lean` (new) test: each fixture's Lean mirror loads, its vector has the expected `variableCount`, its canonical form is stable under the canonicalizer, and its orbit representative matches the Python computation. Python: `tests/test_canonical.py` extended to cover each fixture. Cross-language: `make check` passes on the full known set.
+**Testing approach.** `NonShannonTest/Examples/DFZ.lean` (new) and `NonShannonTest/Examples/Matus.lean` (new) test: each fixture's Lean mirror loads, its vector has the expected `variableCount`, its canonical form is stable under the canonicalizer, and its orbit representative matches the Python computation. `NonShannonTest/Inequality/EvaluateAt.lean` (new) covers the evaluation surface. `NonShannonTest/Examples/ZhangYeung.lean` carries the compatibility-lemma `example`s: the named theorem checks, and one restricted-entropy-function downstream-use check that threads `ZhangYeung.restrictFirstFour_mem_entropyRegion_n`. Python: `tests/test_canonical.py` extended to cover each fixture. Cross-language: `make check` passes on the full known set.
 
-**Checkpoint gate.** `lake build NonShannon`, `lake lint`, `lake test`, `make py-test` green. All nine fixtures (Zhang-Yeung plus DFZ-6 plus three Matús) canonicalize identically cross-language; the oracle (M3) returns non-redundant verdicts on all nine.
+**Checkpoint gate.** `lake build NonShannon`, `lake lint`, `lake test`, `make py-test` green. All nine fixtures (Zhang-Yeung plus DFZ-6 plus three Matús) canonicalize identically cross-language; the oracle (M3) returns non-redundant verdicts on all nine; the sibling-compatibility theorem for Zhang-Yeung ships and the downstream-use `example` closes using `ZhangYeung.EntropyRegion`'s public surface only.
 
 **Plan file:** `docs/plans/todo/<date>-m4-known-inequality-reproduction.md` (spin out at milestone start).
 
@@ -502,12 +514,12 @@ Track A cites Zhang-Yeung 1998 via the sibling project's verified transcription.
 **M3:**
 
 - New: `NonShannon/Certificate/Oracle.lean`, `NonShannonTest/Certificate/Oracle.lean`, `tests/test_redundancy_lp.py`.
-- Updated: `NonShannon/Certificate/Schema.lean`, `NonShannonTest/Certificate/Schema.lean`, `src/non_shannon_search/redundancy_lp.py`, `docs/research/trust-boundary.md`.
+- Updated: `NonShannon/Certificate/Schema.lean`, `NonShannonTest/Certificate/Schema.lean`, `src/non_shannon_search/redundancy_lp.py`, `docs/research/trust-boundary.md`, `lakefile.toml` (add `zhang-yeung-inequality` as a pinned `require`d package).
 
 **M4:**
 
-- New: `NonShannon/Examples/DFZ.lean`, `NonShannon/Examples/Matus.lean`, `NonShannonTest/Examples/DFZ.lean`, `NonShannonTest/Examples/Matus.lean`, `data/fixtures/dfz-*.json`, `data/fixtures/matus-*.json`, `references/transcriptions/doughertyfreilingzeger2011.md`.
-- Updated: `tests/test_canonical.py`, `NonShannon.lean`, `NonShannonTest.lean`.
+- New: `NonShannon/Examples/DFZ.lean`, `NonShannon/Examples/Matus.lean`, `NonShannon/Inequality/EvaluateAt.lean`, `NonShannonTest/Examples/DFZ.lean`, `NonShannonTest/Examples/Matus.lean`, `NonShannonTest/Inequality/EvaluateAt.lean`, `data/fixtures/dfz-*.json`, `data/fixtures/matus-*.json`, `references/transcriptions/doughertyfreilingzeger2011.md`.
+- Updated: `tests/test_canonical.py`, `NonShannon.lean`, `NonShannonTest.lean`, `NonShannon/Examples/ZhangYeung.lean` (sibling-compatibility theorem), `NonShannonTest/Examples/ZhangYeung.lean` (compatibility `example`s).
 
 **M5:**
 
@@ -526,4 +538,4 @@ Track A cites Zhang-Yeung 1998 via the sibling project's verified transcription.
 - `batteries` (via Mathlib): `batteries/runLinter` as `lintDriver`.
 - `jsonschema` (Python, via `uv`): schema validation in `src/non_shannon_search/schema.py`.
 - `ruff`, `pytest`, `jsonschema` (Python dev dependencies via `uv`).
-- Sibling project `cboone/zhang-yeung-inequality`: verified transcription of Zhang-Yeung 1998 at `~/Development/zhang-yeung-inequality/references/transcriptions/zhangyeung1998.md` (verified 2026-04-16), cited until a local copy lands (Section 9, Extension 6).
+- Sibling project `cboone/zhang-yeung-inequality`: pinned lake `require` starting at M3. Imports `ZhangYeung.EntropyRegion` (`zhangYeungAt_n`, `zhangYeungHolds_n`, `entropyFn_n`, `shannonCone_n`, `entropyRegion_n`, `almostEntropicRegion_n`, `restrictFirstFour*`) for the Lean-side oracle adapter and the M4 compatibility theorem. Also provides the verified transcription of Zhang-Yeung 1998 at `~/Development/zhang-yeung-inequality/references/transcriptions/zhangyeung1998.md` (verified 2026-04-16), cited until a local copy lands (Section 9, Extension 6).
