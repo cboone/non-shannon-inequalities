@@ -47,24 +47,29 @@ example : ¬ isCanonicalShape unsortedVector := by decide
 /-! ### Canonicalization on synthetic vectors
 
 Kernel `decide` reduces cleanly for the sign-flip and sort cases because
-`canonicalize` uses `List.insertionSort`, which is structurally recursive. The
-Zhang-Yeung fixed-point example below closes by kernel reduction for the same
-reason.
+`canonicalize` uses `List.insertionSort`, which is structurally recursive.
 
-The duplicate-combination case is the one remaining `native_decide` holdout:
-combining `[0, 2]` with coefficient `1` and `[0, 2]` with coefficient `-1`
-requires evaluating `(1 : Rat) + (-1 : Rat) = 0` at the kernel, and Mathlib's
-`Rat.add` does not reduce under `decide` (normalization via `Nat.gcd` wedges).
-The `set_option` override is scoped narrowly to that one example. -/
+The duplicate-combination case hits one extra wedge: combining terms on
+`[0, 2]` with coefficients `1` and `-1` requires evaluating `(1 : Rat) + (-1 : Rat) = 0`,
+and Mathlib's `Rat.add` does not reduce under `decide` because its
+normalization goes through `Nat.gcd`. `simp` with the canonicalizer's
+component unfolds does reduce through the Rat arithmetic (via
+`simp`-set lemmas rather than kernel evaluation), leaving a structural
+residue that `decide` then closes. -/
 
 example : (canonicalize signedVector).terms.head?.map (·.coefficient) = some (3 : Rat) := by
   decide
 
-set_option linter.style.nativeDecide false in
 example :
     (canonicalize duplicateVector).terms.find? (fun term => term.subset = { vars := [0, 2] })
       = none := by
-  native_decide
+  simp [canonicalize, duplicateVector, InequalityTerm.combineDuplicates,
+    InequalityTerm.insertCombined, VariableSubset.normalize,
+    InequalityVector.normalizeSign, InequalityVector.leadingCoefficient?,
+    List.dedup, List.pwFilter, List.insertionSort,
+    List.foldl, List.filter, List.map, List.find?,
+    InequalityTerm.addCoefficients, VariableSubset.sortKeyLe]
+  decide
 
 example :
     (canonicalize unsortedVector).terms.map (·.subset.vars)
