@@ -75,6 +75,7 @@ pyproject
 pytest
 readlink
 relabelings
+reparsed
 Rocq
 Romashchenko
 scipy

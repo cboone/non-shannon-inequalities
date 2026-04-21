@@ -47,8 +47,8 @@ def test_emit_candidate_constant_renders_rational_coefficients() -> None:
     candidate = load_candidate(FIXTURE)
     source = emit_candidate_constant(candidate)
 
-    assert "(-1 : Rat)" in source
-    assert "(6 : Rat)" in source
+    assert "(1 : Rat)" in source
+    assert "(-4 : Rat)" in source
 
     for term in candidate.terms:
         assert isinstance(term.coefficient, Fraction)
