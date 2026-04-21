@@ -36,7 +36,7 @@ def InequalityTerm.insertCombined (acc : List InequalityTerm) (term : Inequality
         if existing.subset = term.subset then existing.addCoefficients term else existing
   | none => acc ++ [term]
 
-/-- Combines a list of terms into a deduplicated list keyed by the normalized subset. Normalizes each input subset, sums coefficients on equal subsets, and drops zero-coefficient entries. Matches the duplicate-combination pass of `canonicalize_candidate` in the Python canonicalizer. -/
+/-- Combines a list of terms into a deduplicated list keyed by the normalized subset. Normalizes each input subset, sums coefficients on equal subsets, and drops zero-coefficient entries. Matches the duplicate-combination pass of `canonicalize_candidate` in the Python canonicalizer. The internal `VariableSubset.normalize` pass is unconditional: callers that already hold pre-normalized subsets pay for one redundant sort per term. This is fine for M1a's one caller (`canonicalize` in `NonShannon/Inequality/Canonical.lean`), but a future M1b/M1c caller that composes an already-normalized relabeling output with `canonicalize` will traverse the normalize pass twice. Revisit the split between "normalize then combine" and "combine pre-normalized" when M1c rewrites `combineDuplicates` for orbit-enumeration performance (see M1c's risks for the tracked follow-up). -/
 def InequalityTerm.combineDuplicates (terms : List InequalityTerm) : List InequalityTerm :=
   let normalized := terms.map fun term => { term with subset := term.subset.normalize }
   (normalized.foldl InequalityTerm.insertCombined []).filter
