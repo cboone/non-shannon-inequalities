@@ -30,7 +30,7 @@ def canonicalize (vector : InequalityVector) : InequalityVector :=
 def isCanonical (vector : InequalityVector) : Prop :=
   canonicalize vector = vector
 
-/-- Structural shape predicate certifying that an `InequalityVector` is already in the M1a canonical form. Decidable on concrete vectors via the standard `Decidable` instances for list membership, pairwise predicates, and rational comparisons. Paired with `canonicalize_eq_self_of_isCanonicalShape`, this gives a kernel-reducible route to proving `canonicalize v = v` without invoking the canonicalizer's internals. -/
+/-- Structural shape predicate certifying that an `InequalityVector` is already in the M1a canonical form. Decidable on concrete vectors via the standard `Decidable` instances for list membership, pairwise predicates, and rational comparisons. This exposes the canonical form as a kernel-reducible structural condition without referring to the canonicalizer's implementation details. -/
 def isCanonicalShape (vector : InequalityVector) : Prop :=
   (∀ term ∈ vector.terms, term.subset.isNormalized)
     ∧ vector.terms.Pairwise (fun a b => VariableSubset.sortKeyLt a.subset b.subset = true)
