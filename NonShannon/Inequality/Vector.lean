@@ -23,6 +23,25 @@ structure InequalityTerm where
 def InequalityTerm.mapVars (f : Var → Var) (term : InequalityTerm) : InequalityTerm :=
   { term with subset := term.subset.map f }
 
+/-- Merges two terms that share a subset by summing their coefficients. The result keeps the first term's subset; callers are responsible for ensuring the two terms reference equal subsets (typically after passing each through `VariableSubset.normalize`). -/
+def InequalityTerm.addCoefficients (first second : InequalityTerm) : InequalityTerm :=
+  { subset := first.subset, coefficient := first.coefficient + second.coefficient }
+
+/-- Inserts one term into a deduplicated accumulator keyed by subset: if the accumulator already contains a term with an equal subset, combine coefficients via `addCoefficients`; otherwise append the term. Callers should normalize subsets before inserting, so that equal subsets compare as equal. -/
+def InequalityTerm.insertCombined (acc : List InequalityTerm) (term : InequalityTerm) :
+    List InequalityTerm :=
+  match acc.find? fun existing => existing.subset = term.subset with
+  | some _ =>
+      acc.map fun existing =>
+        if existing.subset = term.subset then existing.addCoefficients term else existing
+  | none => acc ++ [term]
+
+/-- Combines a list of terms into a deduplicated list keyed by the normalized subset. Normalizes each input subset, sums coefficients on equal subsets, and drops zero-coefficient entries. Matches the duplicate-combination pass of `canonicalize_candidate` in the Python canonicalizer. -/
+def InequalityTerm.combineDuplicates (terms : List InequalityTerm) : List InequalityTerm :=
+  let normalized := terms.map fun term => { term with subset := term.subset.normalize }
+  (normalized.foldl InequalityTerm.insertCombined []).filter
+    fun term => decide (term.coefficient ≠ 0)
+
 /-- A linear inequality written in a fixed entropy-coordinate basis. -/
 structure InequalityVector where
   /-- Number of base variables referenced by the inequality. -/

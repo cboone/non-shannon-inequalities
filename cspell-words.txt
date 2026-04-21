@@ -28,6 +28,7 @@ extensionless
 Farkas
 Finset
 Fintype
+foldl
 Frantisek
 formalizable
 Freiling
