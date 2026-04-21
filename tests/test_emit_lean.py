@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from non_shannon_search.canonical import canonicalize_candidate
 from non_shannon_search.emit_lean import (
     emit_candidate_constant,
     format_lean_string,
@@ -17,6 +18,37 @@ from non_shannon_search.schema import load_candidate
 
 
 FIXTURE = Path(__file__).resolve().parents[1] / "data" / "fixtures" / "zhang-yeung.json"
+GENERATED_FIXTURE = (
+    Path(__file__).resolve().parents[1]
+    / "NonShannonTest"
+    / "Examples"
+    / "ZhangYeungFromPython.lean"
+)
+GENERATED_CONSTANT_NAME = "zhangYeungAveragedScaledFromPython"
+
+
+def render_generated_zhang_yeung_module() -> str:
+    candidate = canonicalize_candidate(load_candidate(FIXTURE))
+    constant = emit_candidate_constant(candidate, constant_name=GENERATED_CONSTANT_NAME)
+    return "\n".join(
+        [
+            "-- SPDX-FileCopyrightText: 2026 Christopher Boone",
+            "--",
+            "-- SPDX-License-Identifier: Apache-2.0",
+            "",
+            "import NonShannon",
+            "",
+            "namespace NonShannonTest",
+            "",
+            "open NonShannon",
+            "",
+            "/- Generated from Python's canonical Zhang-Yeung fixture. Keep in sync with `tests/test_emit_lean.py`. -/",
+            constant,
+            "",
+            "end NonShannonTest",
+            "",
+        ]
+    )
 
 
 def test_format_lean_string_uses_double_quotes() -> None:
@@ -88,3 +120,7 @@ def test_emit_candidate_constant_rejects_unknown_basis() -> None:
     candidate = replace(load_candidate(FIXTURE), basis="conditional_entropy")
     with pytest.raises(ValueError, match="unsupported basis"):
         emit_candidate_constant(candidate)
+
+
+def test_generated_zhang_yeung_module_matches_python_emitter() -> None:
+    assert GENERATED_FIXTURE.read_text() == render_generated_zhang_yeung_module()
