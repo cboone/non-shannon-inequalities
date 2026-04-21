@@ -68,14 +68,27 @@ actOnVector (r : VariableRelabeling) (v : InequalityVector) : InequalityVector
 
 `actOnSubset` maps `vars` pointwise through the scoped relabeling and then re-normalizes (M1a's `VariableSubset.normalize`). `actOnTerm` applies `actOnSubset` and leaves the coefficient unchanged. `actOnVector` applies `actOnTerm` termwise and does not re-canonicalize; the caller composes with `canonicalize` when a canonical output is needed. Decoupling the action from the canonicalizer keeps the action laws clean and avoids blurring M1b with M1c.
 
+#### Supporting lemmas
+
+Two small helper lemmas in `NonShannon/Inequality/Symmetry.lean` carry the weight of the action laws so the `example`s reduce to structural comparisons:
+
+- `VariableSubset.normalize_map_commute`: for any `f : Var → Var` and `s : VariableSubset`, `(s.normalize.map f).normalize = (s.map f).normalize`. Needed by the composition law, because `actOnSubset r₁ (actOnSubset r₂ s)` normalizes an already-normalized intermediate while `actOnSubset (r₁ * r₂) s` normalizes only once. Both sides have the same element multiset after the combined map, so both normalize to the same list.
+- `VariableRelabeling.actOnSubset_id`: `actOnSubset (VariableRelabeling.id n) s = s.normalize`. A direct consequence of `VariableSubset.normalize_idempotent` (M1a) together with the identity-outside-scope convention.
+
 ### Action laws
 
-Provable by `example` in `NonShannonTest/Inequality/Symmetry.lean`:
+M1b ships one general theorem and three `example`-level laws.
 
-- `canonicalize (actOnVector 1 v) = canonicalize v`.
-- `canonicalize (actOnVector (r₁ * r₂) v) = canonicalize (actOnVector r₁ (actOnVector r₂ v))`.
+General theorem in `NonShannon/Inequality/Canonical.lean`:
+
+- `theorem canonicalize_idempotent (v : InequalityVector) : canonicalize (canonicalize v) = canonicalize v`. Proved via a two-part decomposition: `canonicalize_of_isCanonicalShape : isCanonicalShape v → canonicalize v = v` (structural, one clause per conjunct of the predicate) and `isCanonicalShape_canonicalize : isCanonicalShape (canonicalize v)` (output of each of the three canonicalizer passes satisfies the matching conjunct). Both subsidiary lemmas live in the same file and become useful beyond M1b: the composition law in the symmetry tests consumes the theorem, and M1c's orbit-representative argument needs every orbit element to already be a `canonicalize` fixed point.
+
+Laws in `NonShannonTest/Inequality/Symmetry.lean`, provable by `example`:
+
+- `canonicalize (actOnVector (VariableRelabeling.id n) v) = canonicalize v`.
+- `canonicalize (actOnVector (r₁ * r₂) v) = canonicalize (actOnVector r₁ (actOnVector r₂ v))`, discharged through `canonicalize_idempotent` and `VariableSubset.normalize_map_commute`.
 - If `v` is well-formed for its declared `variableCount`, then `actOnVector r v` is well-formed too.
-- On the Zhang-Yeung fixture, `actOnVector (swap 0 1) zhangYeungAveragedScaled.vector` is a specific, named value that can be compared term-by-term after canonicalization.
+- On the Zhang-Yeung fixture, `canonicalize (actOnVector (VariableRelabeling.swap 4 0 1) zhangYeungAveragedScaled.vector)` equals a named Lean value that mirrors the Python swap-zero-one output (see "Python mirror" below).
 
 ### `VariableRelabeling` upgrade
 
@@ -143,7 +156,7 @@ Sanity checks:
 - **Canonicalization in the action.** `actOnSubset` re-normalizes its output; `actOnVector` does not re-canonicalize. That means two applications of a non-trivial permutation to a non-canonical input can yield a non-canonical output. Documented in the module docstring.
 - **Python permutation representation.** `tuple[int, ...]` is now the resolved mirror of the scoped Lean contract. If debugging ergonomics suffer, add formatter helpers rather than changing the representation.
 - **`VariableRelabeling` churn.** Any downstream code that constructs a `VariableRelabeling` from a bare function now needs to build the scoped object instead. No downstream caller exists at M1b's start (grep for `VariableRelabeling.mk` confirms), but anything landed in parallel with M1b will need a touch-up.
-- **General `canonicalize` idempotence / commutation lemma.** Tracked as a follow-up from the 2026-04-21 M1a branch review. The Goal section's identity `canonicalize (actOnVector r v) = canonicalize (actOnVector r (canonicalize v))` relies on a `canonicalize`-idempotence lemma that does not yet exist: M1a proves `canonicalize`-idempotence only by `example` on the Zhang-Yeung fixture. M1b either needs a general `canonicalize_idempotent : ∀ v, canonicalize (canonicalize v) = canonicalize v` theorem in `NonShannon/Inequality/Canonical.lean`, or a direct equality proof for the stated identity via component idempotence lemmas for `combineDuplicates`, `insertionSort`, and `normalizeSign`. Decide per `example`; if the goal identity reduces to a structural `rfl` after `canonicalize`-idempotence on the specific `actOnVector r v`, the general theorem may not be needed.
+- **General `canonicalize_idempotent` theorem (resolved, now a deliverable).** The 2026-04-21 M1a branch review flagged this as M1b/M1c territory. M1b commits to shipping the general theorem rather than proving the stated identity via ad hoc component lemmas: the composition law in the symmetry tests needs it, and M1c's orbit-representative argument needs it again. Proof strategy: `canonicalize_of_isCanonicalShape` plus `isCanonicalShape_canonicalize`, both on top of the `isCanonicalShape` predicate that M1a already shipped.
 
 ## Why this shape is the right adaptation
 
