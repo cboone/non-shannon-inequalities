@@ -19,9 +19,12 @@ def VariableRelabeling.applySubset (relabeling : VariableRelabeling) (subset : V
 def VariableRelabeling.applyVector (relabeling : VariableRelabeling) (vector : InequalityVector) : InequalityVector :=
   { vector with terms := vector.terms.map fun term => term.mapVars relabeling.image }
 
-/-- Bootstrap canonicalization currently normalizes only the overall sign. -/
+/-- Canonicalizes an inequality vector by (1) combining duplicate terms on normalized subsets and dropping zero-coefficient terms, (2) sorting the remaining terms by `(cardinality, lex)` via `VariableSubset.sortKeyLe`, and (3) flipping the overall sign so the first nonzero coefficient is nonnegative. Mirrors `canonicalize_candidate` in `src/non_shannon_search/canonical.py`; after M1a the two sides produce the same term list on equal inputs. The sort used here is total on the deduplicated key, so stability of `List.mergeSort` does not affect output equality. -/
 def canonicalize (vector : InequalityVector) : InequalityVector :=
-  vector.normalizeSign
+  let combined := InequalityTerm.combineDuplicates vector.terms
+  let sorted := combined.mergeSort
+    fun first second => VariableSubset.sortKeyLe first.subset second.subset
+  { vector with terms := sorted }.normalizeSign
 
 /-- Predicate asserting that an inequality is fixed by the current canonicalizer. -/
 def isCanonical (vector : InequalityVector) : Prop :=
