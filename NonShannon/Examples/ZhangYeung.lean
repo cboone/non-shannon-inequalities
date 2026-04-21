@@ -19,9 +19,9 @@ private def zu : VariableSubset := { vars := [2, 3] }
 private def xzu : VariableSubset := { vars := [0, 2, 3] }
 private def yzu : VariableSubset := { vars := [1, 2, 3] }
 
-/-- The averaged Zhang-Yeung inequality in the joint-entropy basis, scaled by 4 to keep integer coefficients.
+/-- The averaged Zhang-Yeung inequality in the joint-entropy basis, scaled by 4 to keep integer coefficients, then passed through the M1a canonicalizer so that every term carries a normalized subset, duplicate subsets are combined, terms are sorted by `(cardinality, lex)`, and the leading nonzero coefficient is nonnegative.
 
-This is the four-variable non-Shannon inequality from Zhang and Yeung [1998, Eq. (23)], rewritten in the joint-entropy basis and scaled by 4 so that every coefficient is integral.
+This is the four-variable non-Shannon inequality from Zhang and Yeung [1998, Eq. (23)], rewritten in the joint-entropy basis, scaled by 4 so that every coefficient is integral, and sign-flipped at M1a so that the leading coefficient is positive.
 
 ## References
 
@@ -34,26 +34,26 @@ def zhangYeungAveragedScaled : CandidateInequality :=
       { variableCount := 4
         basis := .jointEntropy
         terms :=
-          [ { subset := x, coefficient := (-1 : Rat) }
-          , { subset := y, coefficient := (-1 : Rat) }
-          , { subset := z, coefficient := (-4 : Rat) }
-          , { subset := u, coefficient := (-4 : Rat) }
-          , { subset := xy, coefficient := (-2 : Rat) }
-          , { subset := xz, coefficient := (4 : Rat) }
-          , { subset := xu, coefficient := (4 : Rat) }
-          , { subset := yz, coefficient := (4 : Rat) }
-          , { subset := yu, coefficient := (4 : Rat) }
-          , { subset := zu, coefficient := (6 : Rat) }
-          , { subset := xzu, coefficient := (-5 : Rat) }
-          , { subset := yzu, coefficient := (-5 : Rat) } ] }
+          [ { subset := x, coefficient := (1 : Rat) }
+          , { subset := y, coefficient := (1 : Rat) }
+          , { subset := z, coefficient := (4 : Rat) }
+          , { subset := u, coefficient := (4 : Rat) }
+          , { subset := xy, coefficient := (2 : Rat) }
+          , { subset := xz, coefficient := (-4 : Rat) }
+          , { subset := xu, coefficient := (-4 : Rat) }
+          , { subset := yz, coefficient := (-4 : Rat) }
+          , { subset := yu, coefficient := (-4 : Rat) }
+          , { subset := zu, coefficient := (-6 : Rat) }
+          , { subset := xzu, coefficient := (5 : Rat) }
+          , { subset := yzu, coefficient := (5 : Rat) } ] }
     provenance :=
       { source := "Zhang and Yeung (1998), eq. 23"
         note := "Reference fixture imported during bootstrap from the sibling formalization project." }
     status := .reference }
 
-/-- Catalog entry for the bootstrap Zhang-Yeung reference fixture. -/
+/-- Catalog entry for the Zhang-Yeung reference fixture. -/
 def zhangYeungCatalogEntry : CatalogEntry :=
   { candidate := zhangYeungAveragedScaled
-    notes := ["Bootstrap reference fixture for schema, API, and canonicalization smoke tests."] }
+    notes := ["Reference fixture for schema, API, and canonicalization smoke tests."] }
 
 end NonShannon

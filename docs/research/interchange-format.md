@@ -47,7 +47,10 @@ The current canonicalization pass does three things only:
 
 That rule is intentionally modest. It is enough for fixtures, tests, and later schema consumers, while leaving room for more serious symmetry reduction work in later milestones.
 
+## M1a Canonical Baseline Reset
+
+At milestone M1a closure, the tracked Zhang-Yeung JSON fixture (`data/fixtures/zhang-yeung.json`) and its Lean mirror (`NonShannon/Examples/ZhangYeung.lean`) were re-emitted through the M1a canonicalizer once and are now the canonical baseline for cross-language regression tests. The re-emission flipped the overall sign (the bootstrap fixture led with a negative coefficient on `[0]`) and fixed the term order to `(cardinality, lex)`.
+
 ## Pending M1 Notes
 
-- **M1a canonical baseline reset:** the tracked Zhang-Yeung JSON fixture and Lean mirror are bootstrap artifacts today. M1a is expected to re-emit both through the strengthened canonicalizer once, after which they become the canonical baseline for regression tests.
 - **M1c orbit metadata:** `orbit_id` is planned as the deterministic canonical serialization of the orbit representative, not as a replacement for `symmetry_orbit_size`. The two fields serve different purposes: identity of the orbit representative versus optional externally computed orbit cardinality.
