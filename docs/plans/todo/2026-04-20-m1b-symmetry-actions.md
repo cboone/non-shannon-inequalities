@@ -111,12 +111,22 @@ Update `VariableRelabeling.applySubset` and `applyVector` to delegate to the new
 
 `src/non_shannon_search/symmetry.py` (new):
 
-- `apply_subset(perm: tuple[int, ...], subset: tuple[int, ...]) -> tuple[int, ...]`: applies the scoped permutation pointwise, returns the re-sorted tuple.
-- `apply_term(perm, term: Term) -> Term`
+- `apply_subset(perm: tuple[int, ...], subset: tuple[int, ...]) -> tuple[int, ...]`: applies the scoped permutation pointwise, returns the re-sorted tuple. Indices outside `range(len(perm))` are left fixed, matching the Lean out-of-range convention.
+- `apply_term(perm, term: Term) -> Term`.
 - `apply_candidate(perm, candidate: CandidateInequality) -> CandidateInequality` (returns a non-canonicalized candidate; caller composes with `canonicalize_candidate`).
-- `identity_perm(n: int) -> tuple[int, ...]`, `transposition(n: int, i: int, j: int) -> tuple[int, ...]`, and a small `iter_symmetric_group(n: int)` that yields every `S_n` permutation for `n <= 6`.
+- `identity_perm(n: int) -> tuple[int, ...]`, `transposition(n: int, i: int, j: int) -> tuple[int, ...]`, `perm_from_tuple(n: int, values: tuple[int, ...]) -> tuple[int, ...]` (validated against `range(n)`), and `iter_symmetric_group(n: int)` yielding every `S_n` permutation for `n <= 6`.
 
 Permutations are represented as `tuple[int, ...]` rather than `dict[int, int]` so the scope is explicit in the value's length and easy to validate against `candidate.variable_count`.
+
+#### Cross-language parity mechanism
+
+M1b reuses the closed-loop parity strategy M1a established with `NonShannonTest/Examples/ZhangYeungFromPython.lean`. `src/non_shannon_search/emit_lean.py` gains a second emitter that runs `apply_candidate(transposition(4, 0, 1), zhang_yeung)`, then `canonicalize_candidate` on the result, and prints a Lean module `NonShannonTest/Examples/ZhangYeungSwapZeroOneFromPython.lean` whose shape mirrors the M1a fixture. Three artifacts close the loop:
+
+1. The emitted Lean fixture, checked into the repository under the canonical one-subset-index-per-line formatting used by the M1a fixture.
+1. A `pytest` golden test (`test_generated_zhang_yeung_swap_module_matches_python_emitter` in `tests/test_emit_lean.py` or `tests/test_symmetry.py`) that re-runs the emitter and compares its output byte-for-byte to the checked-in file.
+1. A Lean `example` in `NonShannonTest/Examples/ZhangYeung.lean` asserting `rfl` equality between `zhangYeungSwapZeroOneFromPython.vector` and `canonicalize (actOnVector (VariableRelabeling.swap 4 0 1) zhangYeungAveragedScaled.vector)`.
+
+If any of those three diverges, one of them fails loudly.
 
 ## Execution order
 
@@ -143,26 +153,29 @@ Milestone gate: `lake build NonShannon`, `lake lint`, `lake test`, `make py-test
 
 Sanity checks:
 
-- Lean: identity and composition laws by `example` after canonicalization (structural `rfl` or `simp` with the action lemmas).
-- Lean: preservation of range validity for the Zhang-Yeung fixture and a small synthetic vector.
-- Lean: `swap 0 1` applied to Zhang-Yeung produces a specific term list (named) whose canonical form is equal to the original's canonical form's `actOnVector (swap 0 1) _` value (not to the original canonical form itself; that equivalence is M1c).
-- Python: identity and composition; preservation of range validity; `apply_candidate(swap(0, 1), zhang_yeung)` canonicalized matches the named expected value.
-- Cross-language: Lean `swap 0 1` output and Python `swap(0, 1)` output have equal canonical JSON serializations when parsed with the same schema.
+- Lean: `canonicalize_idempotent` ships as a `theorem`, with one `example` in `NonShannonTest/Inequality/Canonical.lean` exercising it beyond the fixture-specific M1a case.
+- Lean: identity, composition, and range-preservation action laws by `example` after canonicalization, discharged through `canonicalize_idempotent` and the named supporting lemmas.
+- Lean: `canonicalize (actOnVector (VariableRelabeling.swap 4 0 1) zhangYeungAveragedScaled.vector) = zhangYeungSwapZeroOneFromPython.vector` by `rfl` (not equal to the original canonical form itself; that equivalence is M1c).
+- Python: identity and composition laws; preservation of range validity; `canonicalize_candidate(apply_candidate(transposition(4, 0, 1), zhang_yeung))` matches a hard-coded expected value.
+- Cross-language: the golden test compares the emitter output byte-for-byte against the checked-in `NonShannonTest/Examples/ZhangYeungSwapZeroOneFromPython.lean`, closing the Python → Lean loop; the Lean `rfl` `example` closes the Lean-side assertion.
 
 ## Commit strategy
 
-1. `feat(lean): add scoped symmetry action on subsets, terms, and vectors`
+1. `feat(lean): prove canonicalize_idempotent and isCanonicalShape lemmas`
 1. `refactor(lean): scope VariableRelabeling to the declared variable range`
-1. `test(lean): cover action laws in NonShannonTest/Inequality/Symmetry.lean`
+1. `refactor(lean): remove InequalityTerm.mapVars in favor of actOnTerm`
+1. `feat(lean): add scoped symmetry action, supporting lemmas, and test module`
 1. `feat(python): add symmetry module mirroring the Lean action`
-1. `test(python): cover action laws and cross-language parity`
+1. `feat(python): emit Python-generated Lean fixture for swap-zero-one parity`
+1. `test(python): cover action laws and the swap-zero-one golden test`
+1. `test(lean): close the cross-language parity loop in ZhangYeung`
 
 ## Open questions and risks
 
-- **Internal finite representation.** The public contract is resolved, but Lean may still need a little engineering to make a scoped `VariableRelabeling` ergonomic. If `Equiv.Perm (Fin n)` turns out awkward to thread through helper lemmas, add a thin wrapper API rather than loosening the scope discipline.
+- **Internal finite representation (resolved).** Internal data is `Equiv.Perm (Fin variableCount)`, with smart constructors (`id`, `swap`, `ofPerm`) as the public surface so callers never touch raw `Fin` values. Identity outside scope is the documented convention. If `Equiv.Perm (Fin n)` turns out awkward to thread through helper lemmas, add a thin wrapper API rather than loosening the scope discipline.
 - **Canonicalization in the action.** `actOnSubset` re-normalizes its output; `actOnVector` does not re-canonicalize. That means two applications of a non-trivial permutation to a non-canonical input can yield a non-canonical output. Documented in the module docstring.
-- **Python permutation representation.** `tuple[int, ...]` is now the resolved mirror of the scoped Lean contract. If debugging ergonomics suffer, add formatter helpers rather than changing the representation.
-- **`VariableRelabeling` churn.** Any downstream code that constructs a `VariableRelabeling` from a bare function now needs to build the scoped object instead. No downstream caller exists at M1b's start (grep for `VariableRelabeling.mk` confirms), but anything landed in parallel with M1b will need a touch-up.
+- **Python permutation representation (resolved).** `tuple[int, ...]` is the scoped mirror; the `perm_from_tuple` validator in `symmetry.py` rejects out-of-range entries at construction.
+- **`VariableRelabeling` churn (resolved).** The one intra-repo caller of the old surface is `NonShannonTest/Inequality/Canonical.lean`; step 6 of "Execution order" rewrites it to the new smart-constructor form (`VariableRelabeling.swap 4 0 1`).
 - **General `canonicalize_idempotent` theorem (resolved, now a deliverable).** The 2026-04-21 M1a branch review flagged this as M1b/M1c territory. M1b commits to shipping the general theorem rather than proving the stated identity via ad hoc component lemmas: the composition law in the symmetry tests needs it, and M1c's orbit-representative argument needs it again. Proof strategy: `canonicalize_of_isCanonicalShape` plus `isCanonicalShape_canonicalize`, both on top of the `isCanonicalShape` predicate that M1a already shipped.
 
 ## Why this shape is the right adaptation

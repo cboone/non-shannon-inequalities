@@ -59,6 +59,7 @@ Mathlib
 Mathlib's
 Nodup
 Matús
+multiset
 nauty
 noncomputable
 olean
@@ -77,6 +78,7 @@ pytest
 readlink
 relabelings
 reparsed
+retarget
 Rocq
 Romashchenko
 scipy
