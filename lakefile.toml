@@ -17,6 +17,8 @@ autoImplicit = false
 relaxedAutoImplicit = false
 # Enable all mathlib linters: automatically matches what mathlib uses.
 weak.linter.mathlibStandardSet = true
+# Project convention: no hard line-length limit for Lean sources.
+weak.linter.style.longLine = false
 
 [[require]]
 name = "PFR"
