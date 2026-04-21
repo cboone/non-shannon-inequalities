@@ -4,8 +4,6 @@
 
 import NonShannon
 
-set_option linter.style.nativeDecide false
-
 namespace NonShannonTest
 
 open NonShannon
@@ -38,11 +36,31 @@ private def unsortedVector : InequalityVector :=
 example : (swapZeroOne.applySubset xz).vars = [1, 2] := by
   simp [VariableRelabeling.applySubset, VariableSubset.map, swapZeroOne, xz]
 
-/-! ### Canonicalization on synthetic vectors -/
+/-! ### `isCanonicalShape` is decidable on concrete vectors -/
+
+example : isCanonicalShape zhangYeungAveragedScaled.vector := by decide
+
+example : ¬ isCanonicalShape signedVector := by decide
+
+example : ¬ isCanonicalShape unsortedVector := by decide
+
+/-! ### Canonicalization on synthetic vectors
+
+Kernel `decide` reduces cleanly for the sign-flip and sort cases because
+`canonicalize` uses `List.insertionSort`, which is structurally recursive. The
+Zhang-Yeung fixed-point example below closes by kernel reduction for the same
+reason.
+
+The duplicate-combination case is the one remaining `native_decide` holdout:
+combining `[0, 2]` with coefficient `1` and `[0, 2]` with coefficient `-1`
+requires evaluating `(1 : Rat) + (-1 : Rat) = 0` at the kernel, and Mathlib's
+`Rat.add` does not reduce under `decide` (normalization via `Nat.gcd` wedges).
+The `set_option` override is scoped narrowly to that one example. -/
 
 example : (canonicalize signedVector).terms.head?.map (·.coefficient) = some (3 : Rat) := by
-  native_decide
+  decide
 
+set_option linter.style.nativeDecide false in
 example :
     (canonicalize duplicateVector).terms.find? (fun term => term.subset = { vars := [0, 2] })
       = none := by
@@ -51,11 +69,11 @@ example :
 example :
     (canonicalize unsortedVector).terms.map (·.subset.vars)
       = [[0], [1, 2], [2, 3]] := by
-  native_decide
+  decide
 
 /-! ### Zhang-Yeung fixture is a fixed point -/
 
 example : canonicalize zhangYeungAveragedScaled.vector = zhangYeungAveragedScaled.vector := by
-  native_decide
+  decide
 
 end NonShannonTest
