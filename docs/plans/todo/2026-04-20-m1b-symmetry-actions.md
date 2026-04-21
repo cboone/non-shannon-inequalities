@@ -75,6 +75,10 @@ Two small helper lemmas in `NonShannon/Inequality/Symmetry.lean` carry the weigh
 - `VariableSubset.normalize_map_commute`: for any `f : Var → Var` and `s : VariableSubset`, `(s.normalize.map f).normalize = (s.map f).normalize`. Needed by the composition law, because `actOnSubset r₁ (actOnSubset r₂ s)` normalizes an already-normalized intermediate while `actOnSubset (r₁ * r₂) s` normalizes only once. Both sides have the same element multiset after the combined map, so both normalize to the same list.
 - `VariableRelabeling.actOnSubset_id`: `actOnSubset (VariableRelabeling.id n) s = s.normalize`. A direct consequence of `VariableSubset.normalize_idempotent` (M1a) together with the identity-outside-scope convention.
 
+#### Removed helpers
+
+`InequalityTerm.mapVars` (added in M0 as a non-scoped, non-normalizing primitive over a bare `Var → Var`) is removed in this milestone. Its only intra-repo caller, `VariableRelabeling.applyVector`, is rewritten on top of `actOnVector`, leaving `mapVars` as dead code. Carrying two near-synonyms (one scoped and re-normalizing, one bare) would be a readability hazard; `actOnTerm` is the single entry point. `VariableSubset.map` stays as the low-level primitive that `actOnSubset` layers normalization onto.
+
 ### Action laws
 
 M1b ships one general theorem and three `example`-level laws.
@@ -117,17 +121,20 @@ Permutations are represented as `tuple[int, ...]` rather than `dict[int, int]` s
 ## Execution order
 
 1. **Add range validity predicates** in `NonShannon/Inequality/Subsets.lean` and `NonShannon/Inequality/Vector.lean` so range-scoped relabelings have an explicit preservation target.
-1. **Add `NonShannon/Inequality/Symmetry.lean`** with `actOnSubset`, `actOnTerm`, `actOnVector`, plus minimal lemmas for identity, composition, and preservation of range validity.
-1. **Upgrade `VariableRelabeling`** in `NonShannon/Inequality/Canonical.lean` to the new scoped bijection-carrying structure. Rewrite `applySubset` and `applyVector` on top of the new action. Add a deprecation note only if downstream code breaks; prefer to keep the public API intact.
-1. **Add `NonShannonTest/Inequality/Symmetry.lean`** with the identity-action law after canonicalization, composition law after canonicalization, preservation of range validity, and a named Zhang-Yeung `swap 0 1` `example`.
-1. **Add `src/non_shannon_search/symmetry.py`** with the parallel functions.
-1. **Add `tests/test_symmetry.py`** with: identity and composition laws after canonicalization; preservation of range validity; application of `swap 0 1` to Zhang-Yeung matching a named expected value; cross-language parity (Python `apply_candidate(r, zhang_yeung)` canonicalized via `canonicalize_candidate` equals the Lean output for the same `r` and the same fixture).
+1. **Prove `canonicalize_idempotent`** and its two supporting lemmas (`canonicalize_of_isCanonicalShape`, `isCanonicalShape_canonicalize`) in `NonShannon/Inequality/Canonical.lean`, and add one `example` in `NonShannonTest/Inequality/Canonical.lean` that consumes the general theorem (so it is exercised outside the fixture-specific idempotence `example` M1a shipped).
+1. **Upgrade `VariableRelabeling`** in `NonShannon/Inequality/Canonical.lean` to the new scoped bijection-carrying structure. Add the `id`, `swap`, and `ofPerm` smart constructors. Rewrite `applySubset` and `applyVector` on top of the new action.
+1. **Remove `InequalityTerm.mapVars`** from `NonShannon/Inequality/Vector.lean`; it has no callers after step 3.
+1. **Add `NonShannon/Inequality/Symmetry.lean`** with `actOnSubset`, `actOnTerm`, `actOnVector`, the two supporting lemmas (`VariableSubset.normalize_map_commute`, `VariableRelabeling.actOnSubset_id`), and range-validity preservation lemmas. Ship the sibling test module `NonShannonTest/Inequality/Symmetry.lean` in the same commit as the action module; it carries the identity-action, composition, range-preservation, and named Zhang-Yeung swap `example`s.
+1. **Update `NonShannonTest/Inequality/Canonical.lean`** to replace the old `swapZeroOne : VariableRelabeling := { image := ... }` construction with the new smart-constructor form (expected shape: `private def swapZeroOne : VariableRelabeling := VariableRelabeling.swap 4 0 1`) and retarget the existing `applySubset` `example` so it still passes (expected shape: `(swapZeroOne.applySubset xz).vars = [1, 2]`).
+1. **Add `src/non_shannon_search/symmetry.py`** with `apply_subset`, `apply_term`, `apply_candidate`, `identity_perm`, `transposition`, `perm_from_tuple`, and `iter_symmetric_group`. Add an emitter entry point under `src/non_shannon_search/emit_lean.py` that emits a second Python-generated Lean fixture, `NonShannonTest/Examples/ZhangYeungSwapZeroOneFromPython.lean`, mirroring the M1a parity fixture's shape.
+1. **Add `tests/test_symmetry.py`** with identity and composition laws after canonicalization, preservation of range validity, `canonicalize_candidate(apply_candidate(transposition(4, 0, 1), zhang_yeung))` matching a hard-coded expected value, and a byte-for-byte golden test against the checked-in `NonShannonTest/Examples/ZhangYeungSwapZeroOneFromPython.lean`.
+1. **Add a Lean `example`** in `NonShannonTest/Examples/ZhangYeung.lean` asserting `zhangYeungSwapZeroOneFromPython.vector = canonicalize (actOnVector (VariableRelabeling.swap 4 0 1) zhangYeungAveragedScaled.vector) := rfl`, closing the cross-language parity loop.
 1. **Run `make check`.**
 
 ## Files touched
 
-- New: `NonShannon/Inequality/Symmetry.lean`, `NonShannonTest/Inequality/Symmetry.lean`, `src/non_shannon_search/symmetry.py`, `tests/test_symmetry.py`.
-- Modified: `NonShannon/Inequality/Subsets.lean`, `NonShannon/Inequality/Vector.lean`, `NonShannon/Inequality/Canonical.lean` (`VariableRelabeling`), `NonShannonTest/Inequality/Canonical.lean` (update examples that exercise `VariableRelabeling`), `NonShannon.lean` (import new `Symmetry` module), `NonShannonTest.lean` (import new test module).
+- New: `NonShannon/Inequality/Symmetry.lean`, `NonShannonTest/Inequality/Symmetry.lean`, `NonShannonTest/Examples/ZhangYeungSwapZeroOneFromPython.lean`, `src/non_shannon_search/symmetry.py`, `tests/test_symmetry.py`.
+- Modified: `NonShannon/Inequality/Subsets.lean` (range-validity predicate), `NonShannon/Inequality/Vector.lean` (range-validity predicate, remove `InequalityTerm.mapVars`), `NonShannon/Inequality/Canonical.lean` (scoped `VariableRelabeling` upgrade, `canonicalize_idempotent` theorem and its two supporting lemmas), `NonShannonTest/Inequality/Canonical.lean` (smart-constructor form for `swapZeroOne`, one `example` exercising `canonicalize_idempotent`), `NonShannonTest/Examples/ZhangYeung.lean` (swap-zero-one parity `example`), `src/non_shannon_search/emit_lean.py` (emit helper for the new parity fixture), `NonShannon.lean` (import new `Symmetry` module), `NonShannonTest.lean` (imports for the new test module and parity fixture).
 - Not modified: the interchange schemas, any tracked data fixtures, the M1a parity fixture `NonShannonTest/Examples/ZhangYeungFromPython.lean`.
 
 ## Testing and verification
