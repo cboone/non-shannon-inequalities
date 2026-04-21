@@ -28,6 +28,7 @@ extensionless
 Farkas
 Finset
 Fintype
+foldl
 Frantisek
 formalizable
 Freiling
@@ -56,6 +57,7 @@ lockfiles
 Makefiles
 Mathlib
 Mathlib's
+Nodup
 Matús
 nauty
 noncomputable
@@ -65,6 +67,7 @@ opencode
 PFR
 polymatroid
 pointwise
+preorders
 polyhedrality
 psitip
 Pulikkoonattu
@@ -73,6 +76,7 @@ pyproject
 pytest
 readlink
 relabelings
+reparsed
 Rocq
 Romashchenko
 scipy

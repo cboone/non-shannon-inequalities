@@ -95,6 +95,7 @@ Prefer small commits at each logical boundary:
 - **Stability of the sort.** `List.mergeSort` in Mathlib is stable, but the key here is total, so stability does not matter for output equality. Leave a note in the canonicalization module that the sort is total on non-duplicate keys after the dedup pass.
 - **Bootstrap fixture re-emission.** Running the new canonicalizer on Zhang-Yeung is expected to change the tracked artifacts once, because the bootstrap fixture is not yet in the M1a canonical sign convention. That rewrite is part of the milestone, not evidence of a bug, but it must be coordinated across the JSON fixture, the Lean mirror, and `docs/research/interchange-format.md`.
 - **Performance.** M1a's cost is `O(k log k)` per canonicalization for `k` terms. Not a bottleneck for Zhang-Yeung (`k = 12`) and not expected to be one through M5. Benchmarking is M1b/M1c territory when the group action multiplies the term count by orbit size.
+- **Deferred polish: `isCanonicalShape` fourth-conjunct readability.** Tracked as a follow-up from the 2026-04-21 branch review. The fourth conjunct of `NonShannon.isCanonicalShape` in `NonShannon/Inequality/Canonical.lean` is `(∀ head, vector.terms.head? = some head → 0 ≤ head.coefficient)`. The equivalent `match vector.terms with | [] => True | head :: _ => (0 : Rat) ≤ head.coefficient` reads more directly and has the same decidability. Only worth acting on if the file is already being edited for other reasons.
 
 ## Why this shape is the right adaptation
 
