@@ -16,7 +16,8 @@ def zhangYeungAveragedScaledFromPython : CandidateInequality :=
       { variableCount := 4
         basis := .jointEntropy
         terms :=
-          [            { subset := { vars := [0] }, coefficient := (1 : Rat) },
+          [
+            { subset := { vars := [0] }, coefficient := (1 : Rat) },
             { subset := { vars := [1] }, coefficient := (1 : Rat) },
             { subset := { vars := [2] }, coefficient := (4 : Rat) },
             { subset := { vars := [3] }, coefficient := (4 : Rat) },

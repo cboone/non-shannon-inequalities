@@ -72,15 +72,14 @@ def emit_candidate_constant(candidate: CandidateInequality, constant_name: str |
             f"{source} does not yield a valid Lean identifier ({name!r}); "
             "pass an explicit constant_name (or --name on the CLI)"
         )
-    term_lines = [
-        "          ["
+    terms_block = (
+        "          [\n"
         + ",\n".join(
             f"            {{ subset := {{ vars := {list(term.subset)} }}, coefficient := {format_lean_rational(term.coefficient)} }}"
             for term in candidate.terms
         )
         + " ]"
-    ]
-    terms_block = "\n".join(term_lines)
+    )
     return (
         f"def {name} : CandidateInequality :=\n"
         f"  {{ id := {format_lean_string(candidate.id)}\n"
