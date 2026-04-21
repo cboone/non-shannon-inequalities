@@ -60,6 +60,8 @@ residue that `decide` then closes. -/
 example : (canonicalize signedVector).terms.head?.map (·.coefficient) = some (3 : Rat) := by
   decide
 
+-- `simp`'s default lemma set is needed here to reduce through `Rat` arithmetic in `combineDuplicates`; see the file-level docstring above. `linter.flexible` is disabled locally rather than project-wide so the unfold list stays reviewable and the suppression is visibly justified.
+set_option linter.flexible false in
 example :
     (canonicalize duplicateVector).terms.find? (fun term => term.subset = { vars := [0, 2] })
       = none := by
