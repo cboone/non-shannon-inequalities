@@ -35,6 +35,20 @@ Lean can realize that contract internally with `Equiv.Perm (Fin variableCount)` 
 
 Python mirrors the same contract with a fixed-length permutation representation, preferably `tuple[int, ...]` of length `variable_count`, validated to be a permutation of `range(variable_count)`.
 
+#### Out-of-range convention
+
+A `VariableRelabeling` with scope `n` maps any `Var` outside `[0, n)` to itself. This keeps `actOnSubset`, `actOnTerm`, and `actOnVector` total on arbitrary inputs while preserving the invariant that in-range vectors stay in range. The identity-outside-scope rule is stated in the module docstring and covered by an `example` in the test module.
+
+#### Smart constructors
+
+Expose a small, named set of smart constructors on top of the internal representation so callers build scoped relabelings without manipulating `Fin n` indices directly:
+
+- `VariableRelabeling.id (n : Nat) : VariableRelabeling` returns the identity on scope `n`.
+- `VariableRelabeling.swap (n i j : Nat) : VariableRelabeling` returns the transposition `(i j)` on scope `n`, falling back to the identity when either index is out of range. Named to match Mathlib's `Equiv.swap`.
+- `VariableRelabeling.ofPerm (n : Nat) (σ : Equiv.Perm (Fin n)) : VariableRelabeling` lifts an arbitrary finite permutation into the scoped surface.
+
+The Python mirror in `src/non_shannon_search/symmetry.py` exposes 1:1 counterparts: `identity_perm(n)`, `transposition(n, i, j)`, `perm_from_tuple(n, values)` (validated against `range(n)`), and an iterator `iter_symmetric_group(n)` yielding each `S_n` element as a scoped permutation for `n <= 6`.
+
 ### Range validity
 
 M1b makes the range discipline explicit. Add predicates stating that:
@@ -65,16 +79,14 @@ Provable by `example` in `NonShannonTest/Inequality/Symmetry.lean`:
 
 ### `VariableRelabeling` upgrade
 
-Replace:
+Replace the bootstrap placeholder:
 
 ```text
 structure VariableRelabeling where
-  variableCount : Nat
-  image : Var -> Var
-  ...
+  image : Var → Var
 ```
 
-with a scoped wrapper whose data proves bijectivity on the in-range variables. The recommended Lean implementation is a wrapper around `Equiv.Perm (Fin variableCount)` plus helpers that apply it to `Var` values known to be in range. Prefer the wrapper so downstream modules (`NonShannon/Inequality/Canonical.lean`, future `NonShannon/CopyLemma/*`) can still pattern-match against `VariableRelabeling.mk ...` without exposing the finite-index implementation everywhere.
+with a scoped wrapper that carries a declared `variableCount : Nat` alongside data proving bijectivity on `[0, variableCount)` and behaving as the identity outside that range. The recommended Lean implementation wraps `Equiv.Perm (Fin variableCount)` and exposes the smart constructors described in "Scoped relabeling contract" (`id`, `swap`, `ofPerm`) so downstream modules (`NonShannon/Inequality/Canonical.lean`, future `NonShannon/CopyLemma/*`) never need to handle raw `Fin`-indexed data.
 
 Update `VariableRelabeling.applySubset` and `applyVector` to delegate to the new `actOnSubset` / `actOnVector`, inserting re-normalization as needed and requiring the relabeling's scope to match the vector it acts on.
 
@@ -103,7 +115,7 @@ Permutations are represented as `tuple[int, ...]` rather than `dict[int, int]` s
 
 - New: `NonShannon/Inequality/Symmetry.lean`, `NonShannonTest/Inequality/Symmetry.lean`, `src/non_shannon_search/symmetry.py`, `tests/test_symmetry.py`.
 - Modified: `NonShannon/Inequality/Subsets.lean`, `NonShannon/Inequality/Vector.lean`, `NonShannon/Inequality/Canonical.lean` (`VariableRelabeling`), `NonShannonTest/Inequality/Canonical.lean` (update examples that exercise `VariableRelabeling`), `NonShannon.lean` (import new `Symmetry` module), `NonShannonTest.lean` (import new test module).
-- Not modified: the canonicalizer itself beyond re-normalization calls, the interchange schemas, any fixtures.
+- Not modified: the interchange schemas, any tracked data fixtures, the M1a parity fixture `NonShannonTest/Examples/ZhangYeungFromPython.lean`.
 
 ## Testing and verification
 
