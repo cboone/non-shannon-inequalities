@@ -75,6 +75,30 @@ def test_canonicalize_combines_duplicate_subsets() -> None:
     assert canonical.terms == (Term(subset=(1,), coefficient=Fraction(2)),)
 
 
+def test_canonicalize_normalizes_subset_order_before_combining() -> None:
+    candidate = CandidateInequality(
+        id="synthetic-unsorted-subsets",
+        label="Synthetic unsorted subsets",
+        variable_count=4,
+        basis="joint_entropy",
+        terms=(
+            Term(subset=(2, 0), coefficient=Fraction(1)),
+            Term(subset=(0, 2), coefficient=Fraction(2)),
+            Term(subset=(3, 1), coefficient=Fraction(4)),
+            Term(subset=(0,), coefficient=Fraction(1)),
+        ),
+        provenance=Provenance(source="synthetic"),
+        status="reference",
+    )
+    canonical = canonicalize_candidate(candidate)
+
+    assert canonical.terms == (
+        Term(subset=(0,), coefficient=Fraction(1)),
+        Term(subset=(0, 2), coefficient=Fraction(3)),
+        Term(subset=(1, 3), coefficient=Fraction(4)),
+    )
+
+
 def test_python_canonical_matches_lean_mirror_terms() -> None:
     candidate = load_candidate(FIXTURE)
     canonical = canonicalize_candidate(candidate)

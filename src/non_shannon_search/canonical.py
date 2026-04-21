@@ -10,6 +10,12 @@ from fractions import Fraction
 from .schema import CandidateInequality, Term
 
 
+def normalize_subset(subset: tuple[int, ...]) -> tuple[int, ...]:
+    """Returns one subset in sorted duplicate-free order."""
+
+    return tuple(sorted(set(subset)))
+
+
 def subset_sort_key(subset: tuple[int, ...]) -> tuple[int, tuple[int, ...]]:
     """Orders subsets by size, then lexicographically by their indices."""
 
@@ -17,11 +23,12 @@ def subset_sort_key(subset: tuple[int, ...]) -> tuple[int, tuple[int, ...]]:
 
 
 def canonicalize_candidate(candidate: CandidateInequality) -> CandidateInequality:
-    """Combines duplicate terms, sorts them, and normalizes the overall sign."""
+    """Normalizes subsets, combines duplicate terms, sorts them, and normalizes the sign."""
 
     combined: dict[tuple[int, ...], Fraction] = {}
     for term in candidate.terms:
-        combined[term.subset] = combined.get(term.subset, Fraction(0)) + term.coefficient
+        subset = normalize_subset(term.subset)
+        combined[subset] = combined.get(subset, Fraction(0)) + term.coefficient
 
     terms = [
         Term(subset=subset, coefficient=coefficient)
