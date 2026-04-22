@@ -19,9 +19,12 @@ structure InequalityTerm where
   coefficient : Rat
   deriving DecidableEq, Inhabited
 
-/-- Applies a variable relabeling to the subset referenced by the term. -/
-def InequalityTerm.mapVars (f : Var → Var) (term : InequalityTerm) : InequalityTerm :=
-  { term with subset := term.subset.map f }
+/-- A term is in range for `variableCount` when its subset only references variables in `[0, variableCount)`. -/
+def InequalityTerm.IsInRange (variableCount : Nat) (term : InequalityTerm) : Prop :=
+  term.subset.IsInRange variableCount
+
+instance (variableCount : Nat) (term : InequalityTerm) : Decidable (term.IsInRange variableCount) :=
+  inferInstanceAs (Decidable (term.subset.IsInRange variableCount))
 
 /-- Merges two terms that share a subset by summing their coefficients. The result keeps the first term's subset; callers are responsible for ensuring the two terms reference equal subsets (typically after passing each through `VariableSubset.normalize`). -/
 def InequalityTerm.addCoefficients (first second : InequalityTerm) : InequalityTerm :=
@@ -55,6 +58,13 @@ structure InequalityVector where
 /-- The first nonzero coefficient, when one exists. -/
 def InequalityVector.leadingCoefficient? (vector : InequalityVector) : Option Rat :=
   (vector.terms.find? fun term => term.coefficient ≠ 0).map fun term => term.coefficient
+
+/-- An inequality vector is in range when each term stays within its declared `variableCount`. -/
+def InequalityVector.IsInRange (vector : InequalityVector) : Prop :=
+  ∀ term ∈ vector.terms, term.IsInRange vector.variableCount
+
+instance (vector : InequalityVector) : Decidable vector.IsInRange :=
+  inferInstanceAs (Decidable (∀ term ∈ vector.terms, term.IsInRange vector.variableCount))
 
 /-- Negates every coefficient in the inequality vector. -/
 def InequalityVector.neg (vector : InequalityVector) : InequalityVector :=

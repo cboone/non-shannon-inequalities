@@ -10,6 +10,7 @@ import NonShannon.CopyLemma.Parameterized
 import NonShannon.CopyLemma.Parameters
 import NonShannon.Examples.ZhangYeung
 import NonShannon.Inequality.Canonical
+import NonShannon.Inequality.Symmetry
 import NonShannon.Inequality.Subsets
 import NonShannon.Inequality.Vector
 import NonShannon.Prelude

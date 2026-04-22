@@ -11,7 +11,7 @@ open NonShannon
 private def xz : VariableSubset := { vars := [0, 2] }
 
 private def swapZeroOne : VariableRelabeling :=
-  { image := fun v => if v = 0 then 1 else if v = 1 then 0 else v }
+  VariableRelabeling.swap 4 0 1
 
 private def signedVector : InequalityVector :=
   { variableCount := 4
@@ -58,7 +58,7 @@ private def scrambledZhangYeungVector : InequalityVector :=
 /-! ### Relabeling -/
 
 example : (swapZeroOne.applySubset xz).vars = [1, 2] := by
-  simp [VariableRelabeling.applySubset, VariableSubset.map, swapZeroOne, xz]
+  decide
 
 /-! ### `isCanonicalShape` is decidable on concrete vectors -/
 
@@ -123,5 +123,8 @@ example : canonicalize scrambledZhangYeungVector = zhangYeungAveragedScaled.vect
 
 example : canonicalize zhangYeungAveragedScaled.vector = zhangYeungAveragedScaled.vector := by
   decide
+
+example : canonicalize (canonicalize duplicateVector) = canonicalize duplicateVector := by
+  exact canonicalize_idempotent duplicateVector
 
 end NonShannonTest

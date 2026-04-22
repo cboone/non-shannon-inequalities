@@ -11,6 +11,7 @@ import pytest
 from non_shannon_search.canonical import canonicalize_candidate
 from non_shannon_search.emit_lean import (
     emit_candidate_constant,
+    emit_swap_zero_one_module,
     format_lean_string,
     lean_basis_constructor,
 )
@@ -124,3 +125,24 @@ def test_emit_candidate_constant_rejects_unknown_basis() -> None:
 
 def test_generated_zhang_yeung_module_matches_python_emitter() -> None:
     assert GENERATED_FIXTURE.read_text() == render_generated_zhang_yeung_module()
+
+
+def test_emit_swap_zero_one_module_rejects_non_zhang_yeung_candidate() -> None:
+    candidate = replace(load_candidate(FIXTURE), id="synthetic-candidate")
+
+    with pytest.raises(ValueError, match="tracked Zhang-Yeung fixture"):
+        emit_swap_zero_one_module(candidate)
+
+
+def test_emit_swap_zero_one_module_rejects_mismatched_variable_count() -> None:
+    candidate = replace(load_candidate(FIXTURE), variable_count=5)
+
+    with pytest.raises(ValueError, match="tracked Zhang-Yeung fixture"):
+        emit_swap_zero_one_module(candidate)
+
+
+def test_emit_swap_zero_one_module_rejects_mismatched_basis() -> None:
+    candidate = replace(load_candidate(FIXTURE), basis="conditional_entropy")
+
+    with pytest.raises(ValueError, match="tracked Zhang-Yeung fixture"):
+        emit_swap_zero_one_module(candidate)

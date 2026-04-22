@@ -7,7 +7,9 @@ from __future__ import annotations
 from fractions import Fraction
 import re
 
+from .canonical import canonicalize_candidate
 from .schema import CandidateInequality
+from .symmetry import apply_candidate, transposition
 
 
 LEAN_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_']*$")
@@ -16,6 +18,11 @@ LEAN_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_']*$")
 BASIS_LEAN_CONSTRUCTOR = {
     "joint_entropy": ".jointEntropy",
 }
+
+
+TRACKED_ZHANG_YEUNG_ID = "zhang-yeung-averaged-scaled"
+TRACKED_ZHANG_YEUNG_VARIABLE_COUNT = 4
+TRACKED_ZHANG_YEUNG_BASIS = "joint_entropy"
 
 
 def lean_basis_constructor(basis: str) -> str:
@@ -91,4 +98,72 @@ def emit_candidate_constant(candidate: CandidateInequality, constant_name: str |
         f"{terms_block} }}\n"
         f"    provenance := {{ source := {format_lean_string(candidate.provenance.source)}, note := {format_lean_string(candidate.provenance.note)} }}\n"
         f"    status := .{candidate.status} }}"
+    )
+
+
+def emit_candidate_module(
+    candidate: CandidateInequality,
+    *,
+    constant_name: str,
+    comment: str,
+) -> str:
+    """Wraps one emitted candidate constant in the standard Lean fixture module boilerplate."""
+
+    constant = emit_candidate_constant(candidate, constant_name=constant_name)
+    return "\n".join(
+        [
+            "-- SPDX-FileCopyrightText: 2026 Christopher Boone",
+            "--",
+            "-- SPDX-License-Identifier: Apache-2.0",
+            "",
+            "import NonShannon",
+            "",
+            "namespace NonShannonTest",
+            "",
+            "open NonShannon",
+            "",
+            f"/- {comment} -/",
+            constant,
+            "",
+            "end NonShannonTest",
+            "",
+        ]
+    )
+
+
+SWAP_ZERO_ONE_CONSTANT_NAME = "zhangYeungSwapZeroOneFromPython"
+SWAP_ZERO_ONE_COMMENT = (
+    "Generated from Python's swap-zero-one Zhang-Yeung fixture. Keep in sync with tests/test_symmetry.py."
+)
+
+
+def validate_swap_zero_one_candidate(candidate: CandidateInequality) -> None:
+    """Rejects candidates that do not match the tracked Zhang-Yeung swap fixture."""
+
+    if (
+        candidate.id != TRACKED_ZHANG_YEUNG_ID
+        or candidate.variable_count != TRACKED_ZHANG_YEUNG_VARIABLE_COUNT
+        or candidate.basis != TRACKED_ZHANG_YEUNG_BASIS
+    ):
+        raise ValueError(
+            "emit_swap_zero_one_module only supports the tracked Zhang-Yeung fixture "
+            f"(id={TRACKED_ZHANG_YEUNG_ID!r}, "
+            f"variable_count={TRACKED_ZHANG_YEUNG_VARIABLE_COUNT}, "
+            f"basis={TRACKED_ZHANG_YEUNG_BASIS!r}), got "
+            f"id={candidate.id!r}, variable_count={candidate.variable_count}, "
+            f"basis={candidate.basis!r}"
+        )
+
+
+def emit_swap_zero_one_module(candidate: CandidateInequality) -> str:
+    """Emits the checked-in Lean module for the canonicalized swap-zero-one action on one candidate."""
+
+    validate_swap_zero_one_candidate(candidate)
+    swapped = canonicalize_candidate(
+        apply_candidate(transposition(candidate.variable_count, 0, 1), candidate)
+    )
+    return emit_candidate_module(
+        swapped,
+        constant_name=SWAP_ZERO_ONE_CONSTANT_NAME,
+        comment=SWAP_ZERO_ONE_COMMENT,
     )

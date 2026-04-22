@@ -10,7 +10,7 @@ from pathlib import Path
 import sys
 
 from .canonical import canonicalize_candidate
-from .emit_lean import emit_candidate_constant
+from .emit_lean import emit_candidate_constant, emit_swap_zero_one_module
 from .schema import load_candidate, validate_candidate_path
 
 
@@ -29,6 +29,12 @@ def build_parser() -> argparse.ArgumentParser:
     emit_lean = subparsers.add_parser("emit-lean", help="emit a Lean fixture skeleton for a candidate")
     emit_lean.add_argument("path", type=Path)
     emit_lean.add_argument("--name", dest="constant_name", default=None)
+
+    emit_swap_zero_one = subparsers.add_parser(
+        "emit-swap-zero-one-lean",
+        help="emit the canonicalized Zhang-Yeung swap-zero-one Lean module",
+    )
+    emit_swap_zero_one.add_argument("path", type=Path)
 
     return parser
 
@@ -51,7 +57,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "emit-lean":
         candidate = load_candidate(args.path)
-        print(emit_candidate_constant(candidate, constant_name=args.constant_name))
+        sys.stdout.write(emit_candidate_constant(candidate, constant_name=args.constant_name))
+        sys.stdout.write("\n")
+        return 0
+
+    if args.command == "emit-swap-zero-one-lean":
+        candidate = load_candidate(args.path)
+        sys.stdout.write(emit_swap_zero_one_module(candidate))
         return 0
 
     raise ValueError(f"Unknown command: {args.command}")
