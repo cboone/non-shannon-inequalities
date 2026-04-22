@@ -118,7 +118,7 @@ theorem VariableRelabeling.actOnSubset_id (variableCount : Nat) (subset : Variab
     have hFun : (VariableRelabeling.id variableCount).apply = (fun var => var) := by
       funext var
       exact VariableRelabeling.id_apply variableCount var
-    simpa [VariableSubset.map, hFun]
-  simpa [hId] using VariableSubset.normalize_idempotent subset
+    simp [VariableSubset.map, hFun]
+  rw [hId]
 
 end NonShannon

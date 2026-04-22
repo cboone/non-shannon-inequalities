@@ -172,7 +172,7 @@ private theorem insertCombined_preserves_normalized {acc : List InequalityTerm} 
     rw [List.mem_append] at hExisting
     rcases hExisting with hExisting | hExisting
     · exact hAcc existing hExisting
-    · simp at hExisting
+    · rw [List.mem_singleton] at hExisting
       subst hExisting
       exact hTerm
 
@@ -209,16 +209,20 @@ private theorem insertCombined_preserves_pairwiseDistinct {acc : List Inequality
         exact hCross existing hExisting
       refine ⟨hAcc, ⟨by simp, by simp⟩, ?_⟩
       intro existing hExisting other hOther
-      simp at hOther
+      rw [List.mem_singleton] at hOther
       subst hOther
       exact hCross' existing hExisting
   | some matched =>
       let f : InequalityTerm → InequalityTerm :=
         fun existing => if existing.subset = term.subset then existing.addCoefficients term else existing
       rw [List.pairwise_map]
-      exact hAcc.imp (fun {a b} hab => by
-        by_cases ha : a.subset = term.subset <;> by_cases hb : b.subset = term.subset <;>
-          simpa [f, InequalityTerm.addCoefficients, ha, hb] using hab)
+      refine hAcc.imp ?_
+      intro a b hab
+      by_cases ha : a.subset = term.subset <;> by_cases hb : b.subset = term.subset
+      · simpa only [f, InequalityTerm.addCoefficients, ha, hb] using hab
+      · simpa only [f, InequalityTerm.addCoefficients, ha, hb] using hab
+      · simpa only [f, InequalityTerm.addCoefficients, ha, hb] using hab
+      · simpa only [f, InequalityTerm.addCoefficients, ha, hb] using hab
 
 private theorem foldl_insertCombined_preserves_pairwiseDistinct :
     ∀ acc terms : List InequalityTerm,
@@ -295,13 +299,15 @@ theorem InequalityVector.head_nonnegative_normalizeSign_of_nonzero {vector : Ine
           intro head hHead
           have hFirst : first.coefficient ≠ 0 := hNonzero first (by simp)
           by_cases hNeg : first.coefficient < 0
-          · simp [InequalityVector.normalizeSign, InequalityVector.leadingCoefficient?,
-              InequalityVector.neg, hFirst, hNeg] at hHead
-            subst hHead
+          · have hHead' : head = { first with coefficient := -first.coefficient } := by
+              simpa [InequalityVector.normalizeSign, InequalityVector.leadingCoefficient?,
+                InequalityVector.neg, hFirst, hNeg] using hHead.symm
+            rw [hHead']
             exact neg_nonneg.mpr (le_of_lt hNeg)
-          · simp [InequalityVector.normalizeSign, InequalityVector.leadingCoefficient?,
-              InequalityVector.neg, hFirst, hNeg] at hHead
-            subst hHead
+          · have hHead' : head = first := by
+              simpa [InequalityVector.normalizeSign, InequalityVector.leadingCoefficient?,
+                hFirst, hNeg] using hHead.symm
+            rw [hHead']
             exact not_lt.mp hNeg
 
 theorem canonicalize_of_isCanonicalShape {vector : InequalityVector}
@@ -379,7 +385,8 @@ theorem isCanonicalShape_canonicalize (vector : InequalityVector) :
           simp [hHead?, hNeg, sortedVector, InequalityVector.neg]
         have hNegNormalized : ∀ term ∈ sortedVector.neg.terms, term.subset.isNormalized := by
           intro term hTerm
-          simp [sortedVector, InequalityVector.neg, List.mem_map] at hTerm
+          unfold sortedVector InequalityVector.neg at hTerm
+          rw [List.mem_map] at hTerm
           rcases hTerm with ⟨previous, hPrevious, rfl⟩
           exact hSortedNormalized previous hPrevious
         have hNegDistinct : sortedVector.neg.terms.Pairwise (fun a b => a.subset ≠ b.subset) := by
@@ -392,7 +399,8 @@ theorem isCanonicalShape_canonicalize (vector : InequalityVector) :
           exact (List.Pairwise.insertionSort_eq hNegPairwiseComp).symm
         have hNegNonzero : ∀ term ∈ sortedVector.neg.terms, term.coefficient ≠ 0 := by
           intro term hTerm
-          simp [sortedVector, InequalityVector.neg, List.mem_map] at hTerm
+          unfold sortedVector InequalityVector.neg at hTerm
+          rw [List.mem_map] at hTerm
           rcases hTerm with ⟨previous, hPrevious, rfl⟩
           exact neg_ne_zero.mpr (hSortedNonzero previous hPrevious)
         have hNegHead : ∀ head, sortedVector.neg.terms.head? = some head → 0 ≤ head.coefficient := by

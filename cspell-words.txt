@@ -29,15 +29,19 @@ Farkas
 Finset
 Fintype
 foldl
+forall
 Frantisek
 formalizable
 Freiling
+funext
 Gattegno
 Hasan
 Hoelzl
 hardwiring
 inproceedings
 Ingleton
+Irrefl
+irrefl
 itertools
 ISIT
 isit
@@ -57,6 +61,8 @@ lockfiles
 Makefiles
 Mathlib
 Mathlib's
+Nonneg
+nonneg
 Nodup
 Matús
 multiset
@@ -75,6 +81,7 @@ Pulikkoonattu
 pycache
 pyproject
 pytest
+rcases
 readlink
 relabelings
 reparsed
@@ -86,6 +93,7 @@ scrut
 setopt
 Shannon
 simpa
+symm
 submodularity
 subphase
 subphases
