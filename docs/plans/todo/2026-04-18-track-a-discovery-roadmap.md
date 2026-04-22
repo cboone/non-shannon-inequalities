@@ -213,7 +213,7 @@ Namespace convention: flat under `NonShannon` for now (per `AGENTS.md`). New Lea
 ### Dependency graph
 
 ```text
-M0 (shipped) -> M1a -> M1b -> M1c -> M2 -> M3 -> M4 -> M5 -> M6
+M0 (shipped) -> M1a (shipped) -> M1b (shipped) -> M1c (shipped) -> M2 -> M3 -> M4 -> M5 -> M6
                                 ^
                                 +--- M1c canonicalization used by M3 certificate
                                      semantics and by every downstream milestone
@@ -259,7 +259,7 @@ The original bootstrap roadmap carried a single M1 covering four coupled deliver
 
 The three subphases must ship in order (M1a, then M1b, then M1c); no parallelism between them.
 
-### M1a: Term normalization, sparse-vector canonical form, and baseline reset
+### M1a: Term normalization, sparse-vector canonical form, and baseline reset (shipped)
 
 One-line summary: lift the within-inequality canonical form (duplicate-term combination, subset-sorted term ordering, sign normalization) into Lean, matching the existing Python `canonicalize_candidate`, then re-emit the tracked Zhang-Yeung artifacts through that rule once.
 
@@ -278,9 +278,9 @@ One-line summary: lift the within-inequality canonical form (duplicate-term comb
 
 **Checkpoint gate.** `lake build NonShannon`, `lake lint`, `lake test`, `make py-test` green. Concrete sanity check: `canonicalize` is idempotent on a randomized input (a Lean `example` constructing a scrambled form of the Zhang-Yeung fixture and asserting equality after one pass), the tracked Zhang-Yeung JSON fixture and Lean mirror are each regenerated once through the M1a canonicalizer and then become fixed points of it, and Python's canonical JSON output matches Lean's canonical form term-by-term.
 
-**Plan file:** `docs/plans/todo/2026-04-20-m1a-term-normalization.md`.
+**Plan file:** `docs/plans/done/2026-04-20-m1a-term-normalization.md`.
 
-### M1b: Symmetry group actions
+### M1b: Symmetry group actions (shipped)
 
 One-line summary: define a scoped symmetry action on subsets, terms, and vectors; prove the group-action laws by `example`; upgrade `VariableRelabeling` from a bare function to a bijection-carrying structure that preserves range validity for a declared `variableCount`.
 
@@ -297,9 +297,9 @@ One-line summary: define a scoped symmetry action on subsets, terms, and vectors
 
 **Checkpoint gate.** `lake build NonShannon`, `lake lint`, `lake test`, `make py-test` green. Concrete sanity check: identity and composition laws hold on the Zhang-Yeung fixture in both languages after canonicalization; applying the same in-range non-identity relabeling to the Zhang-Yeung fixture in Lean and in Python preserves range validity; and the two raw outputs agree after canonicalization (serialized via JSON for comparison).
 
-**Plan file:** `docs/plans/todo/2026-04-20-m1b-symmetry-actions.md`.
+**Plan file:** `docs/plans/done/2026-04-20-m1b-symmetry-actions.md`.
 
-### M1c: Orbit canonicalization and duplicate-term combination
+### M1c: Orbit canonicalization and duplicate-term combination (shipped)
 
 One-line summary: compose M1a's within-inequality canonical form and M1b's scoped raw action into an orbit-representative companion `orbitCanonical`; plumb orbit IDs through `CandidateInequality` and the JSON schema while retaining `symmetry_orbit_size` as optional supplementary metadata.
 
@@ -319,7 +319,7 @@ One-line summary: compose M1a's within-inequality canonical form and M1b's scope
 
 **Checkpoint gate.** `lake build NonShannon`, `lake lint`, `lake test`, `make py-test` green. Concrete sanity check: applying any non-trivial element of `S_4` to the Zhang-Yeung fixture and then passing through `orbitCanonical` produces a value whose orbit ID equals the original's orbit ID, Lean's and Python's orbit IDs on the fixture agree byte-for-byte, and the schema revision lands with a migration note while preserving the validity and meaning of the existing `symmetry_orbit_size` field.
 
-**Plan file:** `docs/plans/todo/2026-04-20-m1c-orbit-canonicalization.md`.
+**Plan file:** `docs/plans/done/2026-04-20-m1c-orbit-canonicalization.md`.
 
 ### M2: Parameterized copy-lemma statement layer
 

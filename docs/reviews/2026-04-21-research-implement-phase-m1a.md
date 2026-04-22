@@ -85,7 +85,7 @@ No new dependencies were pulled in. No CI/build config changes. No schema, auth,
 
 **Overall progress.** 6 / 6 items in the M1a plan done (100%). 3 / 3 items in the review follow-up plan done (100%).
 
-**Done items (M1a plan, `docs/plans/todo/2026-04-20-m1a-term-normalization.md`):**
+**Done items (M1a plan, `docs/plans/done/2026-04-20-m1a-term-normalization.md`):**
 
 1. `VariableSubset.sortKey` and `VariableSubset.normalize` with idempotence — `72f256a`. Also added `sortKeyLe` and `sortKeyLt` beyond what the plan listed, justified by how the canonicalizer and `isCanonicalShape` consume them.
 1. `InequalityTerm.addCoefficients` and the list-level duplicate-combining fold — `422b8c2`. Implemented as `insertCombined` plus `combineDuplicates`, both documented.
