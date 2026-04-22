@@ -47,8 +47,7 @@ def VariableRelabeling.apply (relabeling : VariableRelabeling) (var : Var) : Var
 instance : CoeFun VariableRelabeling (fun _ => Var → Var) where
   coe := VariableRelabeling.apply
 
-/-- Applies a scoped relabeling pointwise to a subset. -/
-def VariableRelabeling.applySubset (relabeling : VariableRelabeling) (subset : VariableSubset) :
+private def VariableRelabeling.mapSubset (relabeling : VariableRelabeling) (subset : VariableSubset) :
     VariableSubset :=
   subset.map relabeling
 
@@ -81,7 +80,12 @@ instance : Mul VariableRelabeling where
 
 /-- Applies a relabeling to one subset and normalizes the result. -/
 def actOnSubset (relabeling : VariableRelabeling) (subset : VariableSubset) : VariableSubset :=
-  (relabeling.applySubset subset).normalize
+  (relabeling.mapSubset subset).normalize
+
+/-- Applies a scoped relabeling to a subset via the normalized action. -/
+def VariableRelabeling.applySubset (relabeling : VariableRelabeling) (subset : VariableSubset) :
+    VariableSubset :=
+  actOnSubset relabeling subset
 
 /-- Applies a relabeling to one inequality term. -/
 def actOnTerm (relabeling : VariableRelabeling) (term : InequalityTerm) : InequalityTerm :=
@@ -91,6 +95,11 @@ def actOnTerm (relabeling : VariableRelabeling) (term : InequalityTerm) : Inequa
 def actOnVector (relabeling : VariableRelabeling) (vector : InequalityVector) : InequalityVector :=
   { vector with
     terms := vector.terms.map (actOnTerm relabeling) }
+
+/-- Applies a scoped relabeling to every term of an inequality vector via the raw action. The action preserves the vector's declared scope. -/
+def VariableRelabeling.applyVector (relabeling : VariableRelabeling) (vector : InequalityVector) :
+    InequalityVector :=
+  actOnVector relabeling vector
 
 /-- Applies a relabeling to one inequality term. -/
 def InequalityTerm.relabel (relabeling : VariableRelabeling) (term : InequalityTerm) : InequalityTerm :=
@@ -111,8 +120,8 @@ theorem VariableSubset.normalize_map_commute (f : Var → Var) (subset : Variabl
 
 theorem VariableRelabeling.actOnSubset_id (variableCount : Nat) (subset : VariableSubset) :
     actOnSubset (VariableRelabeling.id variableCount) subset = subset.normalize := by
-  unfold actOnSubset VariableRelabeling.applySubset
-  have hId : subset.map (VariableRelabeling.id variableCount) = subset := by
+  unfold actOnSubset VariableRelabeling.mapSubset
+  have hId : VariableSubset.map (VariableRelabeling.id variableCount).apply subset = subset := by
     cases subset
     have hFun : (VariableRelabeling.id variableCount).apply = (fun var => var) := by
       funext var
@@ -132,7 +141,7 @@ theorem VariableRelabeling.apply_lt_of_lt {relabeling : VariableRelabeling} {var
 theorem VariableRelabeling.applySubset_isInRange {relabeling : VariableRelabeling}
     {variableCount : Nat} {subset : VariableSubset}
     (hScope : relabeling.variableCount ≤ variableCount) (hSubset : subset.IsInRange variableCount) :
-    (relabeling.applySubset subset).IsInRange variableCount := by
+    (VariableRelabeling.mapSubset relabeling subset).IsInRange variableCount := by
   intro var hVar
   change var ∈ subset.vars.map relabeling at hVar
   rcases List.mem_map.1 hVar with ⟨previous, hPrevious, rfl⟩
@@ -143,8 +152,8 @@ theorem VariableRelabeling.actOnSubset_isInRange {relabeling : VariableRelabelin
     (hScope : relabeling.variableCount ≤ variableCount) (hSubset : subset.IsInRange variableCount) :
     (actOnSubset relabeling subset).IsInRange variableCount := by
   intro var hVar
-  have hVar' : var ∈ (relabeling.applySubset subset).vars :=
-    (VariableSubset.mem_normalize (subset := relabeling.applySubset subset) (var := var)).1 hVar
+  have hVar' : var ∈ (VariableRelabeling.mapSubset relabeling subset).vars :=
+    (VariableSubset.mem_normalize (subset := VariableRelabeling.mapSubset relabeling subset) (var := var)).1 hVar
   exact relabeling.applySubset_isInRange hScope hSubset var hVar'
 
 theorem InequalityTerm.relabel_isInRange {relabeling : VariableRelabeling} {variableCount : Nat}
