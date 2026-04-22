@@ -430,4 +430,15 @@ theorem canonicalize_idempotent (vector : InequalityVector) :
     canonicalize (canonicalize vector) = canonicalize vector := by
   exact canonicalize_of_isCanonicalShape (isCanonicalShape_canonicalize vector)
 
+/-- Canonicalization is equivariant under composition of scoped relabelings: canonicalizing once after a composed action equals canonicalizing after two sequential actions. -/
+theorem canonicalize_actOnVector_mul {left right : VariableRelabeling} {vector : InequalityVector}
+    (h : left.variableCount = right.variableCount)
+    (hScopeLeft : left.variableCount = vector.variableCount)
+    (hScopeRight : right.variableCount = vector.variableCount)
+    (hScopeMul : (left * right).variableCount = vector.variableCount) :
+    canonicalize (actOnVector (left * right) vector hScopeMul) =
+      canonicalize (actOnVector left (actOnVector right vector hScopeRight)
+        (by rw [actOnVector_variableCount]; exact hScopeLeft)) := by
+  rw [actOnVector_mul h hScopeLeft hScopeRight hScopeMul]
+
 end NonShannon

@@ -12,6 +12,8 @@ checkable
 checkdecls
 codepoint
 cond
+congr
+Congr
 cooldown
 Coraline
 dataclass
@@ -24,6 +26,7 @@ Dougherty
 doughertyfreilingzeger
 Ehmke
 entropic
+equivariant
 extensionless
 Farkas
 Finset
@@ -67,6 +70,7 @@ Nodup
 Matús
 multiset
 nauty
+nolint
 noncomputable
 olean
 oleans
@@ -97,6 +101,7 @@ symm
 submodularity
 subphase
 subphases
+Succ
 Tahar
 termwise
 Tarik

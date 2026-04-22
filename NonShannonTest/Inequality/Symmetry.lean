@@ -40,6 +40,15 @@ private theorem zhangYeungSwapOneTwo_scope :
     zhangYeungSwapOneTwo.variableCount = zhangYeungAveragedScaled.vector.variableCount := by
   decide
 
+private theorem zhangYeungSwap_scope_eq :
+    zhangYeungSwapZeroOne.variableCount = zhangYeungSwapOneTwo.variableCount := by
+  decide
+
+private theorem zhangYeungSwapMul_scope :
+    (zhangYeungSwapZeroOne * zhangYeungSwapOneTwo).variableCount =
+      zhangYeungAveragedScaled.vector.variableCount := by
+  decide
+
 example : ¬ ((VariableRelabeling.swap 5 3 4).variableCount = sampleVector.variableCount) := by
   decide
 
@@ -58,13 +67,13 @@ example : swapZeroOne 5 = 5 := by
 example : (swapZeroOne.applySubset xz).vars = [1, 2] := by
   decide
 
-example : (InequalityTerm.relabel swapZeroOne sampleTerm).subset.vars = [1, 2] := by
+example : (actOnTerm swapZeroOne sampleTerm).subset.vars = [1, 2] := by
   decide
 
-example : (InequalityVector.relabel (VariableRelabeling.swap 2 0 1) sampleVector sampleVector_scope).variableCount = 2 := by
+example : (actOnVector (VariableRelabeling.swap 2 0 1) sampleVector sampleVector_scope).variableCount = 2 := by
   decide
 
-example : (InequalityVector.relabel (VariableRelabeling.swap 2 0 1) sampleVector sampleVector_scope).terms.map (·.subset.vars) = [[1], [0]] := by
+example : (actOnVector (VariableRelabeling.swap 2 0 1) sampleVector sampleVector_scope).terms.map (·.subset.vars) = [[1], [0]] := by
   decide
 
 example : (VariableRelabeling.swap 4 0 1 * VariableRelabeling.swap 4 1 2) 1 = 2 := by
@@ -75,16 +84,15 @@ example :
       = canonicalize zhangYeungAveragedScaled.vector := by
   decide
 
-set_option maxHeartbeats 3000000 in
--- The concrete composition check expands two canonicalization passes over the 12-term Zhang-Yeung fixture and needs a larger reduction budget than the default heartbeat cap.
 example :
-    canonicalize (actOnVector (zhangYeungSwapZeroOne * zhangYeungSwapOneTwo) zhangYeungAveragedScaled.vector (by decide))
-      = canonicalize (actOnVector zhangYeungSwapZeroOne (actOnVector zhangYeungSwapOneTwo zhangYeungAveragedScaled.vector zhangYeungSwapOneTwo_scope) zhangYeungSwapZeroOne_scope) := by
-  decide
+    canonicalize (actOnVector (zhangYeungSwapZeroOne * zhangYeungSwapOneTwo) zhangYeungAveragedScaled.vector zhangYeungSwapMul_scope)
+      = canonicalize (actOnVector zhangYeungSwapZeroOne (actOnVector zhangYeungSwapOneTwo zhangYeungAveragedScaled.vector zhangYeungSwapOneTwo_scope) zhangYeungSwapZeroOne_scope) :=
+  canonicalize_actOnVector_mul zhangYeungSwap_scope_eq zhangYeungSwapZeroOne_scope
+    zhangYeungSwapOneTwo_scope zhangYeungSwapMul_scope
 
 example :
     (actOnVector zhangYeungSwapZeroOne zhangYeungAveragedScaled.vector zhangYeungSwapZeroOne_scope).IsInRange := by
-  exact InequalityVector.relabel_isInRange (vector := zhangYeungAveragedScaled.vector) (relabeling := zhangYeungSwapZeroOne)
+  exact actOnVector_isInRange (vector := zhangYeungAveragedScaled.vector) (relabeling := zhangYeungSwapZeroOne)
     zhangYeungSwapZeroOne_scope (by decide)
 
 example :

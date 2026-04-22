@@ -2,7 +2,7 @@
 --
 -- SPDX-License-Identifier: Apache-2.0
 
-import Mathlib.Data.Fin.Embedding
+import Mathlib.Data.Fin.SuccPred
 import NonShannon.Inequality.Vector
 
 namespace NonShannon
@@ -47,10 +47,6 @@ def VariableRelabeling.apply (relabeling : VariableRelabeling) (var : Var) : Var
 instance : CoeFun VariableRelabeling (fun _ => Var → Var) where
   coe := VariableRelabeling.apply
 
-private def VariableRelabeling.mapSubset (relabeling : VariableRelabeling) (subset : VariableSubset) :
-    VariableSubset :=
-  subset.map relabeling
-
 theorem VariableRelabeling.apply_of_lt {relabeling : VariableRelabeling} {var : Var}
     (h : var < relabeling.variableCount) :
     relabeling var = relabeling.perm ⟨var, h⟩ := by
@@ -66,23 +62,50 @@ theorem VariableRelabeling.id_apply (variableCount var : Nat) :
   unfold VariableRelabeling.id VariableRelabeling.ofPerm VariableRelabeling.apply
   split <;> simp
 
-private def VariableRelabeling.extendPerm (relabeling : VariableRelabeling) (variableCount : Nat)
-    (h : relabeling.variableCount ≤ variableCount) :
-    Equiv.Perm (Fin variableCount) :=
-  relabeling.perm.extendDomain (Fin.castLEEmb h).toEquivRange
-
+/-- Composition of scoped relabelings on a shared scope. When the two scopes agree, the product is the pointwise composition on the common `Fin` type; when they disagree, the product returns the left relabeling as an ill-defined fallback (no in-repo caller triggers that branch). -/
 instance : Mul VariableRelabeling where
   mul left right :=
-    let variableCount := max left.variableCount right.variableCount
-    .ofPerm variableCount
-      (left.extendPerm variableCount (Nat.le_max_left _ _)
-        * right.extendPerm variableCount (Nat.le_max_right _ _))
+    { variableCount := left.variableCount
+      perm :=
+        if h : left.variableCount = right.variableCount then
+          left.perm * (finCongr h.symm).permCongr right.perm
+        else
+          left.perm }
+
+theorem VariableRelabeling.mul_variableCount (left right : VariableRelabeling) :
+    (left * right).variableCount = left.variableCount := rfl
+
+theorem VariableRelabeling.mul_perm_of_scope_eq {left right : VariableRelabeling}
+    (h : left.variableCount = right.variableCount) :
+    (left * right).perm = left.perm * (finCongr h.symm).permCongr right.perm := by
+  change (if h' : left.variableCount = right.variableCount then _ else _) = _
+  rw [dif_pos h]
+
+/-- Pointwise composition of scoped relabelings on a shared scope. -/
+theorem VariableRelabeling.mul_apply {left right : VariableRelabeling}
+    (h : left.variableCount = right.variableCount) (var : Var) :
+    (left * right) var = left (right var) := by
+  by_cases hVar : var < right.variableCount
+  · have hVarLeft : var < left.variableCount := h ▸ hVar
+    have hVarMul : var < (left * right).variableCount := by
+      rw [VariableRelabeling.mul_variableCount]; exact hVarLeft
+    rw [VariableRelabeling.apply_of_lt hVar, VariableRelabeling.apply_of_lt hVarMul]
+    have hRightImageLt : (right.perm ⟨var, hVar⟩).val < left.variableCount := by
+      rw [h]; exact (right.perm ⟨var, hVar⟩).isLt
+    rw [VariableRelabeling.apply_of_lt hRightImageLt]
+    rw [VariableRelabeling.mul_perm_of_scope_eq h]
+    rfl
+  · rw [not_lt] at hVar
+    have hVarLeft : left.variableCount ≤ var := h ▸ hVar
+    rw [VariableRelabeling.apply_of_ge hVar, VariableRelabeling.apply_of_ge hVarLeft,
+      VariableRelabeling.apply_of_ge (show (left * right).variableCount ≤ var by
+        rw [VariableRelabeling.mul_variableCount]; exact hVarLeft)]
 
 /-- Applies a relabeling to one subset and normalizes the result. -/
 def actOnSubset (relabeling : VariableRelabeling) (subset : VariableSubset) : VariableSubset :=
-  (relabeling.mapSubset subset).normalize
+  (subset.map relabeling).normalize
 
-/-- Applies a scoped relabeling to a subset via the normalized action. -/
+/-- Applies a scoped relabeling to a subset via the normalized action. Alias of `actOnSubset` kept so callers can write `relabeling.applySubset subset` when that reads more naturally. -/
 def VariableRelabeling.applySubset (relabeling : VariableRelabeling) (subset : VariableSubset) :
     VariableSubset :=
   actOnSubset relabeling subset
@@ -91,31 +114,34 @@ def VariableRelabeling.applySubset (relabeling : VariableRelabeling) (subset : V
 def actOnTerm (relabeling : VariableRelabeling) (term : InequalityTerm) : InequalityTerm :=
   { term with subset := actOnSubset relabeling term.subset }
 
-/-- Applies a relabeling termwise to an inequality vector without re-canonicalizing it. The action is only available when the relabeling scope matches the vector's declared scope, so in-range terms cannot be pushed out of range. -/
+/-- Applies a relabeling termwise to an inequality vector without re-canonicalizing it. The action requires the relabeling scope to match the vector's declared scope so in-range terms stay in range. The scope-equality hypothesis is a type-level constraint on callers only; the body ignores it. -/
+@[nolint unusedArguments]
 def actOnVector (relabeling : VariableRelabeling) (vector : InequalityVector)
-    (hScope : relabeling.variableCount = vector.variableCount) : InequalityVector :=
-  if h : relabeling.variableCount = vector.variableCount then
-    { vector with
-      terms := vector.terms.map (actOnTerm relabeling) }
-  else
-    False.rec _ (h hScope)
+    (_hScope : relabeling.variableCount = vector.variableCount) : InequalityVector :=
+  { vector with terms := vector.terms.map (actOnTerm relabeling) }
 
-/-- Applies a scoped relabeling to every term of an inequality vector via the raw action. Scope equality is required at the call site. -/
+/-- Applies a scoped relabeling to every term of an inequality vector via the raw action. Alias of `actOnVector` kept so callers can write `relabeling.applyVector vector h` when that reads more naturally. -/
 def VariableRelabeling.applyVector (relabeling : VariableRelabeling) (vector : InequalityVector)
     (hScope : relabeling.variableCount = vector.variableCount) :
     InequalityVector :=
   actOnVector relabeling vector hScope
 
-/-- Applies a relabeling to one inequality term. -/
-def InequalityTerm.relabel (relabeling : VariableRelabeling) (term : InequalityTerm) : InequalityTerm :=
-  actOnTerm relabeling term
-
-/-- Applies a relabeling pointwise to all terms of an inequality vector. Scope equality is required at the call site. -/
-def InequalityVector.relabel (relabeling : VariableRelabeling) (vector : InequalityVector)
+@[simp]
+theorem actOnVector_terms (relabeling : VariableRelabeling) (vector : InequalityVector)
     (hScope : relabeling.variableCount = vector.variableCount) :
-    InequalityVector :=
-  actOnVector relabeling vector hScope
+    (actOnVector relabeling vector hScope).terms = vector.terms.map (actOnTerm relabeling) := rfl
 
+@[simp]
+theorem actOnVector_variableCount (relabeling : VariableRelabeling) (vector : InequalityVector)
+    (hScope : relabeling.variableCount = vector.variableCount) :
+    (actOnVector relabeling vector hScope).variableCount = vector.variableCount := rfl
+
+@[simp]
+theorem actOnVector_basis (relabeling : VariableRelabeling) (vector : InequalityVector)
+    (hScope : relabeling.variableCount = vector.variableCount) :
+    (actOnVector relabeling vector hScope).basis = vector.basis := rfl
+
+/-- Map-then-normalize commutes with normalize-then-map-then-normalize: both sides normalize the same underlying multiset, and uniqueness of normalized forms collapses the extra pass. Consumed by `actOnSubset_mul`. -/
 theorem VariableSubset.normalize_map_commute (f : Var → Var) (subset : VariableSubset) :
     (subset.normalize.map f).normalize = (subset.map f).normalize := by
   apply VariableSubset.eq_of_isNormalized_of_mem_iff
@@ -124,16 +150,57 @@ theorem VariableSubset.normalize_map_commute (f : Var → Var) (subset : Variabl
   intro var
   simp [VariableSubset.map, VariableSubset.mem_normalize, List.mem_map]
 
+/-- The identity relabeling normalizes its argument and does nothing else. -/
 theorem VariableRelabeling.actOnSubset_id (variableCount : Nat) (subset : VariableSubset) :
     actOnSubset (VariableRelabeling.id variableCount) subset = subset.normalize := by
-  unfold actOnSubset VariableRelabeling.mapSubset
-  have hId : VariableSubset.map (VariableRelabeling.id variableCount).apply subset = subset := by
-    cases subset
-    have hFun : (VariableRelabeling.id variableCount).apply = (fun var => var) := by
-      funext var
-      exact VariableRelabeling.id_apply variableCount var
-    simp [VariableSubset.map, hFun]
-  rw [hId]
+  unfold actOnSubset
+  have hFun : ((VariableRelabeling.id variableCount) : Var → Var) = (fun var => var) := by
+    funext var
+    exact VariableRelabeling.id_apply variableCount var
+  cases subset with
+  | mk vars =>
+      simp [VariableSubset.map, hFun]
+
+/-- Composition of scoped relabelings induces pointwise composition of the subset action. -/
+theorem actOnSubset_mul {left right : VariableRelabeling}
+    (h : left.variableCount = right.variableCount) (subset : VariableSubset) :
+    actOnSubset (left * right) subset = actOnSubset left (actOnSubset right subset) := by
+  unfold actOnSubset
+  rw [VariableSubset.normalize_map_commute]
+  congr 1
+  cases subset with
+  | mk vars =>
+      change (VariableSubset.mk (vars.map (left * right))) =
+        VariableSubset.mk ((vars.map right).map left)
+      rw [List.map_map]
+      apply congrArg VariableSubset.mk
+      apply List.map_congr_left
+      intro var _
+      change (left * right).apply var = left.apply (right.apply var)
+      exact VariableRelabeling.mul_apply h var
+
+/-- Composition of scoped relabelings induces pointwise composition of the term action. -/
+theorem actOnTerm_mul {left right : VariableRelabeling}
+    (h : left.variableCount = right.variableCount) (term : InequalityTerm) :
+    actOnTerm (left * right) term = actOnTerm left (actOnTerm right term) := by
+  unfold actOnTerm
+  simp [actOnSubset_mul h]
+
+/-- Composition of scoped relabelings induces pointwise composition of the vector action. -/
+theorem actOnVector_mul {left right : VariableRelabeling} {vector : InequalityVector}
+    (h : left.variableCount = right.variableCount)
+    (hScopeLeft : left.variableCount = vector.variableCount)
+    (hScopeRight : right.variableCount = vector.variableCount)
+    (hScopeMul : (left * right).variableCount = vector.variableCount) :
+    actOnVector (left * right) vector hScopeMul =
+      actOnVector left (actOnVector right vector hScopeRight)
+        (by rw [actOnVector_variableCount]; exact hScopeLeft) := by
+  unfold actOnVector
+  congr 1
+  rw [List.map_map]
+  apply List.map_congr_left
+  intro term _
+  exact actOnTerm_mul h term
 
 theorem VariableRelabeling.apply_lt_of_lt {relabeling : VariableRelabeling} {variableCount var : Nat}
     (hScope : relabeling.variableCount ≤ variableCount) (hVar : var < variableCount) :
@@ -144,37 +211,32 @@ theorem VariableRelabeling.apply_lt_of_lt {relabeling : VariableRelabeling} {var
   · rw [VariableRelabeling.apply_of_ge (Nat.le_of_not_lt hIn)]
     exact hVar
 
-theorem VariableRelabeling.applySubset_isInRange {relabeling : VariableRelabeling}
-    {variableCount : Nat} {subset : VariableSubset}
-    (hScope : relabeling.variableCount ≤ variableCount) (hSubset : subset.IsInRange variableCount) :
-    (VariableRelabeling.mapSubset relabeling subset).IsInRange variableCount := by
+/-- Applying a scoped relabeling preserves range-validity of the underlying subset. -/
+theorem actOnSubset_isInRange {relabeling : VariableRelabeling} {variableCount : Nat}
+    {subset : VariableSubset} (hScope : relabeling.variableCount ≤ variableCount)
+    (hSubset : subset.IsInRange variableCount) :
+    (actOnSubset relabeling subset).IsInRange variableCount := by
   intro var hVar
+  unfold actOnSubset at hVar
+  rw [VariableSubset.mem_normalize] at hVar
   change var ∈ subset.vars.map relabeling at hVar
   rcases List.mem_map.1 hVar with ⟨previous, hPrevious, rfl⟩
   exact relabeling.apply_lt_of_lt hScope (hSubset previous hPrevious)
 
-theorem VariableRelabeling.actOnSubset_isInRange {relabeling : VariableRelabeling}
-    {variableCount : Nat} {subset : VariableSubset}
-    (hScope : relabeling.variableCount ≤ variableCount) (hSubset : subset.IsInRange variableCount) :
-    (actOnSubset relabeling subset).IsInRange variableCount := by
-  intro var hVar
-  have hVar' : var ∈ (VariableRelabeling.mapSubset relabeling subset).vars :=
-    (VariableSubset.mem_normalize (subset := VariableRelabeling.mapSubset relabeling subset) (var := var)).1 hVar
-  exact relabeling.applySubset_isInRange hScope hSubset var hVar'
-
-theorem InequalityTerm.relabel_isInRange {relabeling : VariableRelabeling} {variableCount : Nat}
+/-- Applying a scoped relabeling preserves range-validity of a term. -/
+theorem actOnTerm_isInRange {relabeling : VariableRelabeling} {variableCount : Nat}
     {term : InequalityTerm} (hScope : relabeling.variableCount ≤ variableCount)
     (hTerm : term.IsInRange variableCount) :
-    (term.relabel relabeling).IsInRange variableCount :=
-  relabeling.actOnSubset_isInRange hScope hTerm
+    (actOnTerm relabeling term).IsInRange variableCount :=
+  actOnSubset_isInRange hScope hTerm
 
-theorem InequalityVector.relabel_isInRange {relabeling : VariableRelabeling} {vector : InequalityVector}
+/-- Applying a scoped relabeling preserves range-validity of an inequality vector. -/
+theorem actOnVector_isInRange {relabeling : VariableRelabeling} {vector : InequalityVector}
     (hScope : relabeling.variableCount = vector.variableCount) (hVector : vector.IsInRange) :
-    (vector.relabel relabeling hScope).IsInRange := by
+    (actOnVector relabeling vector hScope).IsInRange := by
   intro term hTerm
-  rw [InequalityVector.relabel, actOnVector, dif_pos hScope] at hTerm ⊢
-  rw [List.mem_map] at hTerm
+  rw [actOnVector_terms, List.mem_map] at hTerm
   rcases hTerm with ⟨previous, hPrevious, rfl⟩
-  exact previous.relabel_isInRange (Nat.le_of_eq hScope) (hVector previous hPrevious)
+  exact actOnTerm_isInRange (Nat.le_of_eq hScope) (hVector previous hPrevious)
 
 end NonShannon
