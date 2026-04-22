@@ -21,6 +21,8 @@ BASIS_LEAN_CONSTRUCTOR = {
 
 
 TRACKED_ZHANG_YEUNG_ID = "zhang-yeung-averaged-scaled"
+TRACKED_ZHANG_YEUNG_VARIABLE_COUNT = 4
+TRACKED_ZHANG_YEUNG_BASIS = "joint_entropy"
 
 
 def lean_basis_constructor(basis: str) -> str:
@@ -138,10 +140,18 @@ SWAP_ZERO_ONE_COMMENT = (
 def validate_swap_zero_one_candidate(candidate: CandidateInequality) -> None:
     """Rejects candidates that do not match the tracked Zhang-Yeung swap fixture."""
 
-    if candidate.id != TRACKED_ZHANG_YEUNG_ID:
+    if (
+        candidate.id != TRACKED_ZHANG_YEUNG_ID
+        or candidate.variable_count != TRACKED_ZHANG_YEUNG_VARIABLE_COUNT
+        or candidate.basis != TRACKED_ZHANG_YEUNG_BASIS
+    ):
         raise ValueError(
             "emit_swap_zero_one_module only supports the tracked Zhang-Yeung fixture "
-            f"({TRACKED_ZHANG_YEUNG_ID!r}), got {candidate.id!r}"
+            f"(id={TRACKED_ZHANG_YEUNG_ID!r}, "
+            f"variable_count={TRACKED_ZHANG_YEUNG_VARIABLE_COUNT}, "
+            f"basis={TRACKED_ZHANG_YEUNG_BASIS!r}), got "
+            f"id={candidate.id!r}, variable_count={candidate.variable_count}, "
+            f"basis={candidate.basis!r}"
         )
 
 

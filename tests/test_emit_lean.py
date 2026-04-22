@@ -132,3 +132,17 @@ def test_emit_swap_zero_one_module_rejects_non_zhang_yeung_candidate() -> None:
 
     with pytest.raises(ValueError, match="tracked Zhang-Yeung fixture"):
         emit_swap_zero_one_module(candidate)
+
+
+def test_emit_swap_zero_one_module_rejects_mismatched_variable_count() -> None:
+    candidate = replace(load_candidate(FIXTURE), variable_count=5)
+
+    with pytest.raises(ValueError, match="tracked Zhang-Yeung fixture"):
+        emit_swap_zero_one_module(candidate)
+
+
+def test_emit_swap_zero_one_module_rejects_mismatched_basis() -> None:
+    candidate = replace(load_candidate(FIXTURE), basis="conditional_entropy")
+
+    with pytest.raises(ValueError, match="tracked Zhang-Yeung fixture"):
+        emit_swap_zero_one_module(candidate)

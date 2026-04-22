@@ -207,7 +207,7 @@ theorem VariableRelabeling.apply_lt_of_lt {relabeling : VariableRelabeling} {var
     relabeling var < variableCount := by
   by_cases hIn : var < relabeling.variableCount
   · rw [VariableRelabeling.apply_of_lt hIn]
-    exact lt_of_lt_of_le (relabeling.perm ⟨var, hIn⟩).is_lt hScope
+    exact lt_of_lt_of_le (relabeling.perm ⟨var, hIn⟩).isLt hScope
   · rw [VariableRelabeling.apply_of_ge (Nat.le_of_not_lt hIn)]
     exact hVar
 

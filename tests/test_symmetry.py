@@ -109,6 +109,13 @@ def test_apply_candidate_rejects_scope_mismatch() -> None:
         apply_candidate(identity_perm(5), candidate)
 
 
+def test_apply_candidate_rejects_non_bijective_tuple() -> None:
+    candidate = load_candidate(FIXTURE)
+
+    with pytest.raises(ValueError, match=r"expected permutation of range\(4\)"):
+        apply_candidate((0, 0, 0, 0), candidate)
+
+
 def test_action_commutes_with_precanonicalization_on_noncanonical_candidate() -> None:
     perm = transposition(4, 0, 1)
 
