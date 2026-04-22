@@ -56,12 +56,15 @@ def _apply_index(perm: Permutation, index: int) -> int:
 def compose_perm(left: Permutation, right: Permutation) -> Permutation:
     """Returns the scoped permutation whose action matches applying `right` then `left`.
 
-    Mirrors the Lean `Mul` instance on `VariableRelabeling`: when the scopes agree, the result at position `i` is `left(right(i))`. When the scopes disagree, the result falls back to `left`.
+    Mirrors the Lean `Mul` instance on `VariableRelabeling`: when the scopes agree, the result at position `i` is `left(right(i))`. When the scopes disagree, the result falls back to `left`. Both inputs are validated as scoped permutations when the scopes agree, so callers see `ValueError` rather than `IndexError` on malformed input.
     """
 
     if len(left) != len(right):
         return left
-    return tuple(left[right[index]] for index in range(len(left)))
+    n = len(left)
+    left = perm_from_tuple(n, left)
+    right = perm_from_tuple(n, right)
+    return tuple(left[right[index]] for index in range(n))
 
 
 def apply_subset(perm: Permutation, subset: tuple[int, ...]) -> tuple[int, ...]:

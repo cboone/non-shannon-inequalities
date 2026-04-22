@@ -90,6 +90,14 @@ def test_compose_perm_falls_back_to_left_on_scope_mismatch() -> None:
     assert compose_perm((1, 0), (0, 1, 2)) == (1, 0)
 
 
+def test_compose_perm_rejects_non_permutation_on_matching_scope() -> None:
+    with pytest.raises(ValueError, match=r"expected permutation of range\(3\)"):
+        compose_perm((0, 1, 2), (0, 1, 3))
+
+    with pytest.raises(ValueError, match=r"expected permutation of range\(3\)"):
+        compose_perm((0, 0, 2), (0, 1, 2))
+
+
 def test_permuted_candidate_stays_within_declared_range() -> None:
     candidate = load_candidate(FIXTURE)
     permuted = apply_candidate(transposition(4, 0, 1), candidate)

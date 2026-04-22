@@ -58,6 +58,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "emit-lean":
         candidate = load_candidate(args.path)
         sys.stdout.write(emit_candidate_constant(candidate, constant_name=args.constant_name))
+        sys.stdout.write("\n")
         return 0
 
     if args.command == "emit-swap-zero-one-lean":
