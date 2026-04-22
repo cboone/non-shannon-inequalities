@@ -29,6 +29,20 @@ private def zhangYeungSwapOneTwo : VariableRelabeling :=
 private def swapZeroOne : VariableRelabeling :=
   VariableRelabeling.swap 4 0 1
 
+private theorem sampleVector_scope : (VariableRelabeling.swap 2 0 1).variableCount = sampleVector.variableCount := by
+  decide
+
+private theorem zhangYeungSwapZeroOne_scope :
+    zhangYeungSwapZeroOne.variableCount = zhangYeungAveragedScaled.vector.variableCount := by
+  decide
+
+private theorem zhangYeungSwapOneTwo_scope :
+    zhangYeungSwapOneTwo.variableCount = zhangYeungAveragedScaled.vector.variableCount := by
+  decide
+
+example : ¬ ((VariableRelabeling.swap 5 3 4).variableCount = sampleVector.variableCount) := by
+  decide
+
 example : swapZeroOne 0 = 1 := by
   decide
 
@@ -47,34 +61,34 @@ example : (swapZeroOne.applySubset xz).vars = [1, 2] := by
 example : (InequalityTerm.relabel swapZeroOne sampleTerm).subset.vars = [1, 2] := by
   decide
 
-example : (InequalityVector.relabel (VariableRelabeling.swap 2 0 1) sampleVector).variableCount = 2 := by
+example : (InequalityVector.relabel (VariableRelabeling.swap 2 0 1) sampleVector sampleVector_scope).variableCount = 2 := by
   decide
 
-example : (InequalityVector.relabel (VariableRelabeling.swap 2 0 1) sampleVector).terms.map (·.subset.vars) = [[1], [0]] := by
+example : (InequalityVector.relabel (VariableRelabeling.swap 2 0 1) sampleVector sampleVector_scope).terms.map (·.subset.vars) = [[1], [0]] := by
   decide
 
 example : (VariableRelabeling.swap 4 0 1 * VariableRelabeling.swap 4 1 2) 1 = 2 := by
   decide
 
 example :
-    canonicalize (actOnVector (VariableRelabeling.id 4) zhangYeungAveragedScaled.vector)
+    canonicalize (actOnVector (VariableRelabeling.id 4) zhangYeungAveragedScaled.vector (by decide))
       = canonicalize zhangYeungAveragedScaled.vector := by
   decide
 
-set_option maxHeartbeats 800000 in
+set_option maxHeartbeats 3000000 in
 -- The concrete composition check expands two canonicalization passes over the 12-term Zhang-Yeung fixture and needs a larger reduction budget than the default heartbeat cap.
 example :
-    canonicalize (actOnVector (zhangYeungSwapZeroOne * zhangYeungSwapOneTwo) zhangYeungAveragedScaled.vector)
-      = canonicalize (actOnVector zhangYeungSwapZeroOne (actOnVector zhangYeungSwapOneTwo zhangYeungAveragedScaled.vector)) := by
+    canonicalize (actOnVector (zhangYeungSwapZeroOne * zhangYeungSwapOneTwo) zhangYeungAveragedScaled.vector (by decide))
+      = canonicalize (actOnVector zhangYeungSwapZeroOne (actOnVector zhangYeungSwapOneTwo zhangYeungAveragedScaled.vector zhangYeungSwapOneTwo_scope) zhangYeungSwapZeroOne_scope) := by
   decide
 
 example :
-    (actOnVector zhangYeungSwapZeroOne zhangYeungAveragedScaled.vector).IsInRange := by
+    (actOnVector zhangYeungSwapZeroOne zhangYeungAveragedScaled.vector zhangYeungSwapZeroOne_scope).IsInRange := by
   exact InequalityVector.relabel_isInRange (vector := zhangYeungAveragedScaled.vector) (relabeling := zhangYeungSwapZeroOne)
-    (by decide) (by decide)
+    zhangYeungSwapZeroOne_scope (by decide)
 
 example :
-    canonicalize (actOnVector zhangYeungSwapZeroOne zhangYeungAveragedScaled.vector)
+    canonicalize (actOnVector zhangYeungSwapZeroOne zhangYeungAveragedScaled.vector zhangYeungSwapZeroOne_scope)
       = zhangYeungSwapZeroOneFromPython.vector := by
   decide
 

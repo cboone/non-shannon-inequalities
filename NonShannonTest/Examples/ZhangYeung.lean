@@ -20,6 +20,6 @@ example : zhangYeungAveragedScaled.vector.terms.length = 12 := rfl
 
 example :
     zhangYeungSwapZeroOneFromPython.vector =
-      canonicalize (actOnVector (VariableRelabeling.swap 4 0 1) zhangYeungAveragedScaled.vector) := rfl
+      canonicalize (actOnVector (VariableRelabeling.swap 4 0 1) zhangYeungAveragedScaled.vector (by decide)) := rfl
 
 end NonShannonTest

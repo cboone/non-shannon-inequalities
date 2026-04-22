@@ -91,24 +91,30 @@ def VariableRelabeling.applySubset (relabeling : VariableRelabeling) (subset : V
 def actOnTerm (relabeling : VariableRelabeling) (term : InequalityTerm) : InequalityTerm :=
   { term with subset := actOnSubset relabeling term.subset }
 
-/-- Applies a relabeling termwise to an inequality vector without re-canonicalizing it. The action preserves the vector's declared scope; callers that want range preservation must supply a relabeling whose declared scope stays within that scope. -/
-def actOnVector (relabeling : VariableRelabeling) (vector : InequalityVector) : InequalityVector :=
-  { vector with
-    terms := vector.terms.map (actOnTerm relabeling) }
+/-- Applies a relabeling termwise to an inequality vector without re-canonicalizing it. The action is only available when the relabeling scope matches the vector's declared scope, so in-range terms cannot be pushed out of range. -/
+def actOnVector (relabeling : VariableRelabeling) (vector : InequalityVector)
+    (hScope : relabeling.variableCount = vector.variableCount) : InequalityVector :=
+  if h : relabeling.variableCount = vector.variableCount then
+    { vector with
+      terms := vector.terms.map (actOnTerm relabeling) }
+  else
+    False.rec _ (h hScope)
 
-/-- Applies a scoped relabeling to every term of an inequality vector via the raw action. The action preserves the vector's declared scope. -/
-def VariableRelabeling.applyVector (relabeling : VariableRelabeling) (vector : InequalityVector) :
+/-- Applies a scoped relabeling to every term of an inequality vector via the raw action. Scope equality is required at the call site. -/
+def VariableRelabeling.applyVector (relabeling : VariableRelabeling) (vector : InequalityVector)
+    (hScope : relabeling.variableCount = vector.variableCount) :
     InequalityVector :=
-  actOnVector relabeling vector
+  actOnVector relabeling vector hScope
 
 /-- Applies a relabeling to one inequality term. -/
 def InequalityTerm.relabel (relabeling : VariableRelabeling) (term : InequalityTerm) : InequalityTerm :=
   actOnTerm relabeling term
 
-/-- Applies a relabeling pointwise to all terms of an inequality vector. The action preserves the vector's declared scope; callers that want range preservation must supply a relabeling whose declared scope stays within that scope. -/
-def InequalityVector.relabel (relabeling : VariableRelabeling) (vector : InequalityVector) :
+/-- Applies a relabeling pointwise to all terms of an inequality vector. Scope equality is required at the call site. -/
+def InequalityVector.relabel (relabeling : VariableRelabeling) (vector : InequalityVector)
+    (hScope : relabeling.variableCount = vector.variableCount) :
     InequalityVector :=
-  actOnVector relabeling vector
+  actOnVector relabeling vector hScope
 
 theorem VariableSubset.normalize_map_commute (f : Var → Var) (subset : VariableSubset) :
     (subset.normalize.map f).normalize = (subset.map f).normalize := by
@@ -163,12 +169,12 @@ theorem InequalityTerm.relabel_isInRange {relabeling : VariableRelabeling} {vari
   relabeling.actOnSubset_isInRange hScope hTerm
 
 theorem InequalityVector.relabel_isInRange {relabeling : VariableRelabeling} {vector : InequalityVector}
-    (hScope : relabeling.variableCount ≤ vector.variableCount) (hVector : vector.IsInRange) :
-    (vector.relabel relabeling).IsInRange := by
+    (hScope : relabeling.variableCount = vector.variableCount) (hVector : vector.IsInRange) :
+    (vector.relabel relabeling hScope).IsInRange := by
   intro term hTerm
-  rw [InequalityVector.relabel, actOnVector] at hTerm
+  rw [InequalityVector.relabel, actOnVector, dif_pos hScope] at hTerm ⊢
   rw [List.mem_map] at hTerm
   rcases hTerm with ⟨previous, hPrevious, rfl⟩
-  exact previous.relabel_isInRange hScope (hVector previous hPrevious)
+  exact previous.relabel_isInRange (Nat.le_of_eq hScope) (hVector previous hPrevious)
 
 end NonShannon
