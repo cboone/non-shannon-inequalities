@@ -37,7 +37,7 @@ This extends the sort key already introduced in M1a to coefficients. Rational co
 
 ### Orbit enumeration
 
-For `n <= 5`, `|S_n| = 120`, so exhaustive orbit enumeration is cheap: enumerate every scoped relabeling `r ∈ S_n`, compute `canonicalize (actOnVector r v)`, collect, sort, return the minimum. For `n = 6` (`|S_6| = 720`) still manageable. For larger `n`, the search milestones (M5) do not currently plan to go beyond `n = 5`, but if they do, M1c's enumeration becomes the bottleneck (Section 7.1 of the roadmap).
+For `n = 4` (Zhang-Yeung), `|S_4| = 24`; for `n = 5`, `|S_5| = 120`; for `n = 6`, `|S_6| = 720`. All three sizes are cheap in practice. Exhaustive orbit enumeration: enumerate every scoped relabeling `r ∈ S_n`, compute `canonicalize (actOnVector r v)`, collect, return the lex-minimum. For larger `n`, the search milestones (M5) do not currently plan to go beyond `n = 5`, but if they do, M1c's enumeration becomes the bottleneck (Section 7.1 of the roadmap).
 
 Implementation uses the scoped M1b relabeling surface: Lean enumerates `S_n` through finite permutations on the in-range variables, and Python does the same with `itertools.permutations` over `range(n)`.
 
@@ -45,16 +45,30 @@ Implementation uses the scoped M1b relabeling surface: Lean enumerates `S_n` thr
 
 The orbit ID is a deterministic serialization of the orbit representative's canonical form. Options:
 
-1. **Deterministic string form of the canonical vector.** For example, `"4;[[[0],-1],[[1],-1],[[2],-4],...]"` where terms are in canonical order and coefficients are in rational string form. No hashing; the ID is the serialization. Pros: trivial to verify, trivial to eyeball, cross-language by construction. Cons: grows with inequality size.
+1. **Deterministic string form of the canonical vector.** No hashing; the ID is the serialization. Pros: trivial to verify, trivial to eyeball, cross-language by construction. Cons: grows with inequality size.
 1. **SHA-256 hex of the canonical serialization.** Fixed-width ID. Pros: compact; cons: obscures the content.
 
 **Resolved:** option 1 (string form). The inequalities this project handles have at most a few dozen terms; opaque hashes hide the mathematical object from reviewers for no gain at this scale. Revisit if M5 produces tens of thousands of retained candidates.
+
+**Pinned format.** The orbit-ID string is `{variableCount};{term};{term};...`, where each `{term}` is either `[{i0},{i1},...]:{num}` (when the denominator is 1) or `[{i0},{i1},...]:{num}/{den}` (otherwise). Detail:
+
+- `{variableCount}` is the decimal `Nat` with no leading zeros.
+- Subset indices are strictly increasing (as produced by `VariableSubset.normalize`), separated by `,` with no spaces.
+- `{num}` is the signed numerator in base 10, no leading `+`. `{den}` is the unsigned denominator, never emitted when `1`. Zero coefficients do not appear (`canonicalize` filters them).
+- Terms are in canonical order (sorted by `(cardinality, lex)`), separated by `;`.
+- An empty term list still produces `{variableCount};`, preserving `;` as the sole structural separator.
+
+Example (Zhang-Yeung prefix): `4;[0]:1;[1]:1;[2]:4;[3]:4;[0,1]:2;[0,2]:-4;...`.
+
+Both Lean and Python construct this string directly from the canonical term list; neither side delegates coefficient formatting to a pre-existing printer (Lean's `Rat.repr`, Python's `format_rational`), so the format is one shared contract rather than an emergent agreement between two unrelated printers.
 
 This field supplements rather than replaces the existing optional `symmetry_orbit_size` metadata. `orbit_id` identifies the orbit representative; `symmetry_orbit_size` records an externally computed orbit cardinality when such a number is available.
 
 ### Schema revision
 
-Add an optional `orbit_id` field (string) to `schemas/candidate-inequality.schema.json`. Optional on the way in so that existing fixtures without the field still validate; populated on the way out by the canonicalizer. Keep the existing optional `symmetry_orbit_size` field unchanged. Write a migration note in `docs/research/interchange-format.md` describing the new field, the unchanged role of `symmetry_orbit_size`, and the canonicalization rule that produces `orbit_id`.
+Add an optional `orbit_id` field (typed `["string", "null"]`, with `minLength: 1` when non-null) to `schemas/candidate-inequality.schema.json`. Optional on the way in so that existing fixtures without the field still validate; populated on the way out by the canonicalizer. Keep the existing optional `symmetry_orbit_size` field unchanged. Write a migration note in `docs/research/interchange-format.md` describing (a) the new field, (b) the unchanged role of `symmetry_orbit_size`, (c) the canonicalization rule that produces `orbit_id`, and (d) the CLI behavior change: `non-shannon-search canonicalize` now emits M1c-complete payloads (`orbit_id` populated) instead of only the M1a within-inequality canonical form.
+
+JSON emission convention: `orbit_id` is always present in `CandidateInequality.to_dict()` output, set to `null` when absent, matching how `copy_parameters_ref` and `symmetry_orbit_size` are emitted today. Fixtures regenerated through the M1c pipeline follow the same convention, so validators never split-brain on missing-versus-null.
 
 Lean mirror: add `orbitId : Option String := none` to `CandidateInequality` in `NonShannon/Certificate/Schema.lean`.
 
@@ -71,26 +85,36 @@ Two options for how the orbit-canonicalization integrates:
 
 **Resolved:** option 2. Keep `canonicalize` as the within-inequality operation; add `orbitCanonical` as the stronger form. Reason: M2 and downstream might want the cheaper within-inequality form for fast equality checks, and the orbit version for deduplication across search outputs. Having both available without forcing every caller to pay the orbit-enumeration cost is cleaner.
 
-`CandidateInequality.orbitId` is populated by a helper that calls `orbitCanonical` and serializes the result.
+Three surface pieces, each with a distinct return shape:
 
-On the Python side, the public CLI must stay aligned with that rule. `src/non_shannon_search/cli.py`'s `canonicalize` subcommand should therefore emit a payload whose `orbit_id` is populated by the same orbit-aware helper used for fixture regeneration and tests, rather than continuing to expose only the M1a within-inequality canonical form.
+- **`orbitCanonical : InequalityVector -> InequalityVector`** (Lean) / **`orbit_canonical(candidate) -> CandidateInequality`** (Python). Returns the orbit-representative form: the lex-minimum `canonicalize (actOnVector r v)` over `r ∈ S_n`. Lossy on the caller's specific permutation (two permuted forms of the same inequality produce equal output). The Python variant returns a `CandidateInequality` whose `vector` is the representative and whose `orbit_id` is populated via `orbit_id_of`.
+- **`orbitIdOf : InequalityVector -> String`** (Lean) / **`orbit_id_of(candidate) -> str`** (Python). Returns the pinned-format serialization of `orbitCanonical` applied to the input. Orbit-invariant by construction: the identity that powers the cross-language gate.
+- **CLI `canonicalize` subcommand**: emits the M1a within-inequality canonical form of the input with `orbit_id` populated via `orbit_id_of`. Preserves the caller's specific permutation in the emitted `terms` while still carrying the orbit-invariant identifier. Callers that want the orbit representative's `terms` call `orbit_canonical` directly from the Python library.
 
 ## Execution order
 
-1. **Extend `NonShannon/Inequality/Canonical.lean`** with `orbitCanonical` and the helper that serializes a canonical `InequalityVector` to the orbit-ID string. Prove orbit-invariance of `orbitCanonical` by `example` on Zhang-Yeung (applying any `S_4` element, then canonicalizing across the orbit, yields equal output).
-1. **Add `NonShannonTest/Inequality/Orbit.lean`** with orbit-invariance `example`s under named `S_4` elements and a cross-form parity `example` (two hand-permuted forms of Zhang-Yeung share an orbit representative).
-1. **Extend `NonShannon/Inequality/Canonical.lean` or add a small helper** to compute `orbitIdOf : InequalityVector -> String`.
-1. **Add `orbitId : Option String := none`** to `CandidateInequality` in `NonShannon/Certificate/Schema.lean`. Update all call sites that construct a `CandidateInequality`, including `NonShannon/Examples/ZhangYeung.lean`.
-1. **Extend `NonShannonTest/Certificate/Schema.lean`** so the orbit-ID field is covered in the API regression tests and its coexistence with `symmetryOrbitSize?` is explicit.
-1. **Revise `schemas/candidate-inequality.schema.json`** to add the optional `orbit_id` field. Update `src/non_shannon_search/schema.py` to mirror.
-1. **Extend `src/non_shannon_search/canonical.py`** with `orbit_canonical(candidate)` and `orbit_id_of(candidate)`. Ship matching helpers in `src/non_shannon_search/symmetry.py` for the orbit enumeration.
-1. **Update `src/non_shannon_search/cli.py`** so the public `canonicalize` command emits M1c-complete payloads with `orbit_id` populated.
-1. **Update `src/non_shannon_search/emit_lean.py` and `tests/test_emit_lean.py`** so the checked-in Python-emitted Lean mirrors keep tracking the fixture shape after `orbit_id` lands.
+1. **Extend `NonShannon/Inequality/Canonical.lean`** with the full orbit-canonicalization surface:
+   - Add `InequalityVector.lexKey` (or an equivalent comparator over `(length, List (subset.sortKey, coefficient))`) and a list-minimum helper on canonical vectors. `InequalityVector` currently only derives `DecidableEq`, so the lex-min scaffolding is where most of the implementation time will go.
+   - Add `orbitCanonical : InequalityVector -> InequalityVector` via exhaustive enumeration of `Equiv.Perm (Fin v.variableCount)`, each lifted to a scoped `VariableRelabeling`, applied with `actOnVector`, canonicalized with `canonicalize`, and reduced to the lex-minimum via the helper above.
+   - Add `orbitIdOf : InequalityVector -> String`, serializing a canonical vector into the pinned format directly (not via `Rat.repr` or any other existing printer).
+   - Prove orbit-invariance of `orbitCanonical` and `orbitIdOf` by `example` on Zhang-Yeung (applying identity, `swap 0 1`, `swap 2 3`, and one three-cycle; each produces the same output after one `orbitCanonical` pass).
+1. **Add `NonShannonTest/Inequality/Orbit.lean`** with orbit-invariance `example`s under the named `S_4` elements and a cross-form parity `example` (two hand-permuted forms of Zhang-Yeung share an orbit representative).
+1. **Wire `NonShannonTest/Inequality/Orbit.lean` into `NonShannonTest.lean`** by adding `import NonShannonTest.Inequality.Orbit` next to the existing test imports, so `lake test` picks it up.
+1. **Add `orbitId : Option String := none`** to `CandidateInequality` in `NonShannon/Certificate/Schema.lean`. Call sites constructing `CandidateInequality` (at minimum `NonShannon/Examples/ZhangYeung.lean`, `NonShannonTest/Certificate/Schema.lean`, `NonShannonTest/Catalog.lean`) continue to compile with the default `none`; the tracked Zhang-Yeung literal gets its concrete orbit ID in step 11 after the helper is available.
+1. **Extend `NonShannonTest/Certificate/Schema.lean`** with concrete coexistence `example`s for the new field. At minimum:
+   - `example : ({ candidate with orbitId := some "fixture-orbit", symmetryOrbitSize? := some 24 }).orbitId = some "fixture-orbit"`
+   - `example : ({ candidate with orbitId := some "fixture-orbit", symmetryOrbitSize? := some 24 }).symmetryOrbitSize? = some 24`
+   - `example : candidate.orbitId = none` (default case)
+1. **Revise `schemas/candidate-inequality.schema.json`** to add the optional `orbit_id` field (`["string", "null"]`, `minLength: 1` when non-null). Update `src/non_shannon_search/schema.py` to mirror, keeping the "always present, null when absent" emission convention already used by `copy_parameters_ref` and `symmetry_orbit_size`.
+1. **Extend `src/non_shannon_search/canonical.py`** with `orbit_canonical(candidate) -> CandidateInequality` (returns the orbit-representative form with `orbit_id` populated) and `orbit_id_of(candidate) -> str` (returns the pinned-format serialization). Ship matching helpers in `src/non_shannon_search/symmetry.py` for the orbit enumeration if they do not fit cleanly in `canonical.py`.
+1. **Update `src/non_shannon_search/cli.py`** so the public `canonicalize` command emits the M1a within-inequality canonical form of the input with `orbit_id` populated via `orbit_id_of`. The CLI does not permute `terms` to the orbit representative; that remains an explicit `orbit_canonical` call in Python.
+1. **Update `src/non_shannon_search/emit_lean.py` and `tests/test_emit_lean.py`** so the checked-in Python-emitted Lean mirrors keep tracking the fixture shape after `orbit_id` lands. The Lean emitter adds an `orbitId := some "..."` line to each generated constant whose Python source carries one.
 1. **Regenerate `NonShannonTest/Examples/ZhangYeungFromPython.lean` and `NonShannonTest/Examples/ZhangYeungSwapZeroOneFromPython.lean`** through the updated Python emitter, and keep `NonShannonTest/Examples/ZhangYeung.lean` proving equality against those generated modules.
-1. **Extend `tests/test_canonical.py`** with orbit-invariance and `tests/test_symmetry.py` with cross-language orbit-ID parity on Zhang-Yeung.
-1. **Extend `tests/test_schema.py`** so the schema revision is covered by Python's dedicated schema-validation and round-trip tests, not only by fixture-level canonicalization tests.
-1. **Regenerate `data/fixtures/zhang-yeung.json`** through the M1c pipeline so that its `orbit_id` field is populated. Commit the regenerated fixture.
-1. **Update `docs/research/interchange-format.md`** with the migration note.
+1. **Update the tracked Lean literal.** Compute the Zhang-Yeung orbit ID via `#eval orbitIdOf zhangYeungAveragedScaled.vector` (equivalent to Python's `orbit_id_of` on the fixture) and paste the resulting string as `orbitId := some "..."` on `zhangYeungAveragedScaled` in `NonShannon/Examples/ZhangYeung.lean`. Add a Lean `example` in `NonShannonTest/Examples/ZhangYeung.lean` asserting `zhangYeungAveragedScaled.orbitId = some (orbitIdOf zhangYeungAveragedScaled.vector)` so the pasted string cannot drift silently from the helper output.
+1. **Extend `tests/test_canonical.py`** with orbit-invariance checks; extend `tests/test_symmetry.py` with cross-language orbit-ID parity on Zhang-Yeung. The cross-language parity test reads the generated Lean module's bytes, parses out the `orbitId := some "..."` string literal, and asserts equality with Python's `orbit_id_of(load_candidate(FIXTURE))` — reusing the existing checked-in-emitted-module parity pattern from `test_emit_lean.py` and `test_symmetry.py` rather than introducing a scrut harness.
+1. **Extend `tests/test_schema.py`** with concrete cases: payload omitting `orbit_id` validates; payload with `orbit_id: null` validates; payload with `orbit_id: "..."` validates; `CandidateInequality.from_dict(...).to_dict()` round-trips the field without dropping it.
+1. **Regenerate `data/fixtures/zhang-yeung.json`** through the M1c pipeline so its `orbit_id` field is populated (as a string, not `null`). Commit the regenerated fixture.
+1. **Update `docs/research/interchange-format.md`** with the migration note (schema revision plus the `canonicalize` CLI behavior change).
 1. **Run `make check`.** Everything should be green; if a fixture breaks, the M1c pipeline has a bug.
 
 ## Files touched
@@ -105,14 +129,13 @@ Milestone gate: `lake build NonShannon`, `lake lint`, `lake test`, `make py-test
 
 Concrete sanity checks:
 
-- Lean `example`: for each element of a small generating set of `S_4` (say identity, `swap 0 1`, `swap 2 3`, and one three-cycle), `orbitCanonical (actOnVector r zhangYeung.vector) = orbitCanonical zhangYeung.vector`.
-- Lean `example`: `orbitIdOf (actOnVector r zhangYeung.vector) = orbitIdOf zhangYeung.vector`.
-- Python `pytest`: same pair of checks on the Python side.
-- Cross-language: Lean `orbitIdOf` and Python `orbit_id_of` produce byte-identical output on the Zhang-Yeung fixture. A small scrut-or-pytest harness that imports both outputs and compares strings suffices; hardwiring the string into a Lean `example` is also acceptable but more brittle.
-- Schema/API: constructing a `CandidateInequality` with both `orbitId := none` and `symmetryOrbitSize? := none` still works, and populating `orbitId` does not change the meaning of `symmetryOrbitSize?`.
-- Python CLI: `non-shannon-search canonicalize data/fixtures/zhang-yeung.json` emits JSON with `orbit_id` populated, matching the fixture and the library helper rather than the pre-M1c shape.
+- Lean `example`: for each element of the covered `S_4` set (identity, `swap 0 1`, `swap 2 3`, and one three-cycle), `orbitCanonical (actOnVector r zhangYeung.vector _) = orbitCanonical zhangYeung.vector` and `orbitIdOf (actOnVector r zhangYeung.vector _) = orbitIdOf zhangYeung.vector`.
+- Python `pytest`: same pair of checks on the Python side for the named `S_4` elements, plus a full-orbit check that iterates every element of `iter_symmetric_group(4)` and asserts invariance.
+- Cross-language: the Zhang-Yeung orbit ID is byte-identical in Lean and Python. The check reads `NonShannonTest/Examples/ZhangYeungFromPython.lean`'s emitted `orbitId := some "..."` line, parses the string literal, and asserts equality with Python's `orbit_id_of(load_candidate(FIXTURE))`. This reuses the existing checked-in-emitted-module parity pattern already in `test_emit_lean.py` and `test_symmetry.py`; no scrut harness is introduced.
+- Schema/API: `NonShannonTest/Certificate/Schema.lean` gains concrete `example`s for `orbitId = none` (default), `orbitId = some "..."` with `symmetryOrbitSize? = none`, and both fields set simultaneously, per the execution order.
+- Python CLI: `non-shannon-search canonicalize data/fixtures/zhang-yeung.json` emits JSON with `orbit_id` populated (not `null`), `terms` in the M1a canonical order of the input, and all other fields unchanged from the pre-M1c output.
 - Python-emitted Lean parity: `tests/test_emit_lean.py` still matches the checked-in emitted modules byte-for-byte, and `NonShannonTest/Examples/ZhangYeung.lean` still proves equality between the emitted constants and the tracked Lean mirror after `orbitId` is added.
-- Python schema gate: `tests/test_schema.py` validates payloads that omit `orbit_id`, validates payloads that include it, and round-trips the populated Zhang-Yeung fixture through `CandidateInequality.from_dict` / `to_dict` without dropping the field.
+- Python schema gate: `tests/test_schema.py` validates payloads that omit `orbit_id`, payloads that set it to `null`, and payloads that set it to a string; it also round-trips the populated Zhang-Yeung fixture through `CandidateInequality.from_dict` / `to_dict` without dropping the field.
 
 ## Commit strategy
 
@@ -128,11 +151,11 @@ Concrete sanity checks:
 ## Open questions and risks
 
 - **Orbit size for `n > 5`.** `|S_n|` grows as `n!`; M1c's enumeration is `O(n! · k log k)` for `k` terms. For `n = 6`, `720` permutations is fine; for `n = 7`, `5040` is a noticeable per-inequality cost. Roadmap risk 7.1 already flags this; if M5 elects `n = 6` or higher, revisit the enumeration with coset representatives or a permutation canonicalization trick (for example, canonical labeling via a `nauty`-style scheme). Out of scope for M1c itself.
-- **Orbit ID stability across coefficient serialization.** Orbit ID is sensitive to the exact rational string format. Python's `format_rational` and Lean's rational-to-string must produce identical output for every representable coefficient. Add a small cross-language test that iterates over a spread of coefficients (`-5`, `3/2`, `0` which should not appear, `-1/3`) and verifies equal string form.
-- **Existing callers of `CandidateInequality`.** The `orbitId` field is optional; existing callers (`NonShannon/Examples/ZhangYeung.lean`, `NonShannonTest/Certificate/Schema.lean`, `NonShannonTest/Catalog.lean`) should continue to compile with the default `none`. After the canonicalizer populates the Zhang-Yeung fixture's orbit ID, update the Lean-side literal to match so the fixture is in canonical form by construction.
+- **Orbit ID stability across coefficient serialization.** Closed by the pinned-format decision above: Lean and Python each construct the orbit ID from the canonical term list directly, without delegating to `Rat.repr` or `format_rational`. A small cross-language regression test (Lean-side and Python-side serializers applied to a spread of coefficients: `-5`, `3/2`, `-1/3`, `7`) guards the shared contract against future drift.
+- **Existing callers of `CandidateInequality`.** The `orbitId` field is optional and defaults to `none`; existing callers (`NonShannon/Examples/ZhangYeung.lean`, `NonShannonTest/Certificate/Schema.lean`, `NonShannonTest/Catalog.lean`) compile unchanged. After the canonicalizer computes the Zhang-Yeung orbit ID, paste the resulting string as `orbitId := some "..."` on the Lean literal and add a Lean `example` asserting `zhangYeungAveragedScaled.orbitId = some (orbitIdOf zhangYeungAveragedScaled.vector)` so the pasted string cannot drift silently from the helper output.
 - **Schema compatibility.** The schema revision adds an optional field, not a required one, and it does not remove `symmetry_orbit_size`. Consumers that validate fixtures without `orbit_id` still pass. No breaking change for existing consumers.
 - **Emitter and generated-fixture drift.** M1a's follow-up work made the Python-emitted Lean fixtures part of the regression contract. Once `CandidateInequality` gains `orbit_id` / `orbitId`, `emit_lean.py`, `tests/test_emit_lean.py`, and the checked-in generated modules must move in lockstep or the parity path will fail even if orbit canonicalization itself is correct.
-- **O(n²) within-inequality canonicalization cost and redundant subset normalization.** Tracked as a follow-up from the 2026-04-21 M1a branch review. `InequalityTerm.combineDuplicates` in `NonShannon/Inequality/Vector.lean` uses a linear-scan `List.find?` plus `List.map` inside a `foldl`, so the within-inequality canonicalization pass is `O(k²)` per call for `k` terms. M1c's `orbitCanonical` multiplies that by `|S_n| = n!`. A second, related wedge: `combineDuplicates` unconditionally normalizes every input subset, and M1b's `actOnSubset` is specified to hand out already-normalized subsets. Every `canonicalize (actOnVector r v)` inside the orbit loop therefore walks each term's `vars` through `VariableSubset.normalize` twice. For Zhang-Yeung (`n = 4`, `k = 12`) both costs are trivial; for larger inequalities or if M5 elects `n ≥ 6`, upgrade `combineDuplicates` to a `HashMap (List Nat) Rat`-keyed or `RBMap`-keyed fold and split its contract (take pre-normalized input, do the outer `normalize` once in `canonicalize`) as part of M1c's enumeration work, rather than retrofitting after the orbit surface lands.
+- **`O(k²)` within-inequality canonicalization cost and redundant subset normalization — deferred past M1c.** Tracked as a follow-up from the 2026-04-21 M1a branch review. `InequalityTerm.combineDuplicates` in `NonShannon/Inequality/Vector.lean` uses a linear-scan `List.find?` plus `List.map` inside a `foldl`, so the within-inequality canonicalization pass is `O(k²)` per call for `k` terms. M1c's `orbitCanonical` multiplies that by `|S_n| = n!`. A second, related wedge: `combineDuplicates` unconditionally normalizes every input subset, and M1b's `actOnSubset` is specified to hand out already-normalized subsets, so every `canonicalize (actOnVector r v)` inside the orbit loop walks each term's `vars` through `VariableSubset.normalize` twice. For Zhang-Yeung (`n = 4`, `k = 12`, `|S_4| = 24`) the total cost is roughly `24 · 12² = 3456` elementary operations — well under a millisecond. Decision: **leave `combineDuplicates` alone in M1c** and revisit when M5 elects `n ≥ 6` or the first real search input pushes `k` past a few dozen terms. The `NonShannon/Inequality/Vector.lean` docstring is updated in the same commit to point to a future milestone rather than claiming M1c will do the rewrite. When the rewrite does happen, the target is a `HashMap (List Nat) Rat`-keyed or `TreeMap`-keyed fold, with the contract split so `canonicalize` does the outer `normalize` once and `combineDuplicates` takes pre-normalized input.
 
 ## Why this shape is the right adaptation
 
