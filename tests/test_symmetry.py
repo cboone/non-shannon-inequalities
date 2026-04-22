@@ -153,5 +153,20 @@ def test_iter_symmetric_group_yields_all_elements_for_s3() -> None:
     assert len(tuple(iter_symmetric_group(3))) == 6
 
 
+def test_identity_perm_rejects_negative_scope() -> None:
+    with pytest.raises(ValueError, match="expected non-negative scope"):
+        identity_perm(-1)
+
+
+def test_transposition_rejects_negative_scope() -> None:
+    with pytest.raises(ValueError, match="expected non-negative scope"):
+        transposition(-1, 0, 0)
+
+
+def test_iter_symmetric_group_rejects_negative_scope() -> None:
+    with pytest.raises(ValueError, match="expected non-negative scope"):
+        next(iter_symmetric_group(-1))
+
+
 def test_generated_zhang_yeung_swap_module_matches_python_emitter() -> None:
     assert GENERATED_FIXTURE.read_text() == render_generated_swap_module()

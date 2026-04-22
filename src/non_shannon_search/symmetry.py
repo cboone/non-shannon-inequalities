@@ -26,12 +26,16 @@ def perm_from_tuple(n: int, values: tuple[int, ...]) -> Permutation:
 def identity_perm(n: int) -> Permutation:
     """Returns the identity permutation on `range(n)`."""
 
+    if n < 0:
+        raise ValueError(f"expected non-negative scope, got {n}")
     return tuple(range(n))
 
 
 def transposition(n: int, i: int, j: int) -> Permutation:
     """Returns the transposition `(i j)` on `range(n)`, or the identity if either index is out of range."""
 
+    if n < 0:
+        raise ValueError(f"expected non-negative scope, got {n}")
     values = list(range(n))
     if 0 <= i < n and 0 <= j < n:
         values[i], values[j] = values[j], values[i]
@@ -39,8 +43,10 @@ def transposition(n: int, i: int, j: int) -> Permutation:
 
 
 def iter_symmetric_group(n: int):
-    """Yields every element of `S_n` for `n <= 6`."""
+    """Yields every element of `S_n` for `0 <= n <= 6`."""
 
+    if n < 0:
+        raise ValueError(f"expected non-negative scope, got {n}")
     if n > 6:
         raise ValueError("iter_symmetric_group only supports n <= 6")
     for values in permutations(range(n)):
