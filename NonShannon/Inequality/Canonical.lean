@@ -7,12 +7,77 @@ import NonShannon.Inequality.Symmetry
 
 namespace NonShannon
 
-/-- Canonicalizes an inequality vector by (1) combining duplicate terms on normalized subsets and dropping zero-coefficient terms, (2) sorting the remaining terms by `(cardinality, lex)` via `VariableSubset.sortKeyLe`, and (3) flipping the overall sign so the first nonzero coefficient is nonnegative. Mirrors `canonicalize_candidate` in `src/non_shannon_search/canonical.py`; after M1a the two sides produce the same term list on equal inputs. The sort used here is `List.insertionSort`, chosen over `List.mergeSort` because insertion sort reduces under kernel `decide` while Lean core's merge sort does not. Both produce the same sorted output on total preorders; the choice is purely one of reducibility. -/
+/-- Canonicalizes an inequality vector by (1) combining duplicate terms on normalized subsets and dropping zero-coefficient terms, (2) sorting the remaining terms by `(cardinality, lex)` via `VariableSubset.sortKeyLe`, and (3) flipping the overall sign so the first nonzero coefficient is nonnegative. This is the M1a within-inequality canonicalizer, not the stronger orbit canonicalizer. Mirrors `canonicalize_candidate` in `src/non_shannon_search/canonical.py`; after M1a the two sides produce the same term list on equal inputs. The sort used here is `List.insertionSort`, chosen over `List.mergeSort` because insertion sort reduces under kernel `decide` while Lean core's merge sort does not. Both produce the same sorted output on total preorders; the choice is purely one of reducibility. -/
 def canonicalize (vector : InequalityVector) : InequalityVector :=
   let combined := InequalityTerm.combineDuplicates vector.terms
   let sorted := combined.insertionSort
     fun first second => VariableSubset.sortKeyLe first.subset second.subset
   { vector with terms := sorted }.normalizeSign
+
+private def termOrbitLt (first second : InequalityTerm) : Bool :=
+  if first.subset.sortKey = second.subset.sortKey then
+    first.coefficient < second.coefficient
+  else
+    VariableSubset.sortKeyLt first.subset second.subset
+
+private def termsOrbitLt : List InequalityTerm → List InequalityTerm → Bool
+  | [], [] => false
+  | [], _ :: _ => true
+  | _ :: _, [] => false
+  | first :: restFirst, second :: restSecond =>
+      if first = second then termsOrbitLt restFirst restSecond else termOrbitLt first second
+
+private def vectorOrbitLt (first second : InequalityVector) : Bool :=
+  if first.terms.length = second.terms.length then
+    termsOrbitLt first.terms second.terms
+  else
+    first.terms.length < second.terms.length
+
+private def orbitMin (first second : InequalityVector) : InequalityVector :=
+  if vectorOrbitLt second first then second else first
+
+private def applyPermutationIndex (values : List Nat) (var : Nat) : Nat :=
+  values.getD var var
+
+private def actOnSubsetValues (values : List Nat) (subset : VariableSubset) : VariableSubset :=
+  (subset.map (applyPermutationIndex values)).normalize
+
+private def actOnVectorValues (values : List Nat) (vector : InequalityVector) : InequalityVector :=
+  { vector with terms := vector.terms.map fun term => { term with subset := actOnSubsetValues values term.subset } }
+
+private def orbitImages (vector : InequalityVector) : List InequalityVector :=
+  (List.range vector.variableCount).permutations.map fun values =>
+    canonicalize (actOnVectorValues values vector)
+
+private def joinWith (separator : String) : List String → String
+  | [] => ""
+  | head :: tail => tail.foldl (fun acc part => acc ++ separator ++ part) head
+
+private def serializeSubset (subset : VariableSubset) : String :=
+  "[" ++ joinWith "," (subset.vars.map toString) ++ "]"
+
+private def serializeCoefficient (coefficient : Rat) : String :=
+  let numerator := toString coefficient.num
+  if coefficient.den = 1 then
+    numerator
+  else
+    numerator ++ "/" ++ toString coefficient.den
+
+private def serializeTerm (term : InequalityTerm) : String :=
+  serializeSubset term.subset ++ ":" ++ serializeCoefficient term.coefficient
+
+/-- Returns the lexicographically least M1a-canonical representative across the full scoped symmetry orbit of the input vector. -/
+def orbitCanonical (vector : InequalityVector) : InequalityVector :=
+  match orbitImages vector with
+  | [] => canonicalize vector
+  | head :: tail => tail.foldl orbitMin head
+
+/-- Serializes the orbit representative of an inequality vector into the pinned M1c orbit-ID format `{variableCount};{term};{term};...`. -/
+def orbitIdOf (vector : InequalityVector) : String :=
+  let representative := orbitCanonical vector
+  match representative.terms.map serializeTerm with
+  | [] => toString representative.variableCount ++ ";"
+  | serializedTerms => toString representative.variableCount ++ ";" ++ joinWith ";" serializedTerms
 
 /-- Predicate asserting that an inequality is fixed by the current canonicalizer. -/
 def isCanonical (vector : InequalityVector) : Prop :=
