@@ -92,3 +92,33 @@ def emit_candidate_constant(candidate: CandidateInequality, constant_name: str |
         f"    provenance := {{ source := {format_lean_string(candidate.provenance.source)}, note := {format_lean_string(candidate.provenance.note)} }}\n"
         f"    status := .{candidate.status} }}"
     )
+
+
+def emit_candidate_module(
+    candidate: CandidateInequality,
+    *,
+    constant_name: str,
+    comment: str,
+) -> str:
+    """Wraps one emitted candidate constant in the standard Lean fixture module boilerplate."""
+
+    constant = emit_candidate_constant(candidate, constant_name=constant_name)
+    return "\n".join(
+        [
+            "-- SPDX-FileCopyrightText: 2026 Christopher Boone",
+            "--",
+            "-- SPDX-License-Identifier: Apache-2.0",
+            "",
+            "import NonShannon",
+            "",
+            "namespace NonShannonTest",
+            "",
+            "open NonShannon",
+            "",
+            f"/- {comment} -/",
+            constant,
+            "",
+            "end NonShannonTest",
+            "",
+        ]
+    )
