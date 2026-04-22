@@ -20,6 +20,9 @@ BASIS_LEAN_CONSTRUCTOR = {
 }
 
 
+TRACKED_ZHANG_YEUNG_ID = "zhang-yeung-averaged-scaled"
+
+
 def lean_basis_constructor(basis: str) -> str:
     """Maps a schema-level `basis` value to its Lean `CoordinateBasis` constructor."""
 
@@ -132,9 +135,20 @@ SWAP_ZERO_ONE_COMMENT = (
 )
 
 
+def validate_swap_zero_one_candidate(candidate: CandidateInequality) -> None:
+    """Rejects candidates that do not match the tracked Zhang-Yeung swap fixture."""
+
+    if candidate.id != TRACKED_ZHANG_YEUNG_ID:
+        raise ValueError(
+            "emit_swap_zero_one_module only supports the tracked Zhang-Yeung fixture "
+            f"({TRACKED_ZHANG_YEUNG_ID!r}), got {candidate.id!r}"
+        )
+
+
 def emit_swap_zero_one_module(candidate: CandidateInequality) -> str:
     """Emits the checked-in Lean module for the canonicalized swap-zero-one action on one candidate."""
 
+    validate_swap_zero_one_candidate(candidate)
     swapped = canonicalize_candidate(
         apply_candidate(transposition(candidate.variable_count, 0, 1), candidate)
     )

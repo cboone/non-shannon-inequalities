@@ -32,7 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     emit_swap_zero_one = subparsers.add_parser(
         "emit-swap-zero-one-lean",
-        help="emit the canonicalized swap-zero-one Lean module for a candidate",
+        help="emit the canonicalized Zhang-Yeung swap-zero-one Lean module",
     )
     emit_swap_zero_one.add_argument("path", type=Path)
 

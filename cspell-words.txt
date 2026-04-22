@@ -72,12 +72,15 @@ multiset
 nauty
 nolint
 noncomputable
+noncanonical
 olean
 oleans
 opencode
 PFR
 polymatroid
 pointwise
+precanonicalization
+precanonicalize
 preorders
 polyhedrality
 psitip

@@ -56,11 +56,12 @@ def _apply_index(perm: Permutation, index: int) -> int:
 def compose_perm(left: Permutation, right: Permutation) -> Permutation:
     """Returns the scoped permutation whose action matches applying `right` then `left`.
 
-    Mirrors the Lean `Mul` instance on `VariableRelabeling`: for each `i` in the combined scope, the result at position `i` is `left(right(i))`, with out-of-scope indices treated as fixed.
+    Mirrors the Lean `Mul` instance on `VariableRelabeling`: when the scopes agree, the result at position `i` is `left(right(i))`. When the scopes disagree, the result falls back to `left`.
     """
 
-    scope = max(len(left), len(right))
-    return tuple(_apply_index(left, _apply_index(right, index)) for index in range(scope))
+    if len(left) != len(right):
+        return left
+    return tuple(left[right[index]] for index in range(len(left)))
 
 
 def apply_subset(perm: Permutation, subset: tuple[int, ...]) -> tuple[int, ...]:

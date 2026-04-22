@@ -20,6 +20,13 @@ private def sampleVector : InequalityVector :=
       [ { subset := { vars := [0] }, coefficient := (1 : Rat) }
       , { subset := { vars := [1] }, coefficient := (-2 : Rat) } ] }
 
+private def noncanonicalActionVector : InequalityVector :=
+  { variableCount := 4
+    terms :=
+      [ { subset := { vars := [2, 0] }, coefficient := (3 : Rat) }
+      , { subset := { vars := [3, 1] }, coefficient := (4 : Rat) }
+      , { subset := { vars := [0] }, coefficient := (1 : Rat) } ] }
+
 private def zhangYeungSwapZeroOne : VariableRelabeling :=
   VariableRelabeling.swap 4 0 1
 
@@ -47,6 +54,14 @@ private theorem zhangYeungSwap_scope_eq :
 private theorem zhangYeungSwapMul_scope :
     (zhangYeungSwapZeroOne * zhangYeungSwapOneTwo).variableCount =
       zhangYeungAveragedScaled.vector.variableCount := by
+  decide
+
+private theorem noncanonicalActionVector_scope :
+    swapZeroOne.variableCount = noncanonicalActionVector.variableCount := by
+  decide
+
+private theorem noncanonicalCanonical_scope :
+    swapZeroOne.variableCount = (canonicalize noncanonicalActionVector).variableCount := by
   decide
 
 example : ¬ ((VariableRelabeling.swap 5 3 4).variableCount = sampleVector.variableCount) := by
@@ -79,6 +94,9 @@ example : (actOnVector (VariableRelabeling.swap 2 0 1) sampleVector sampleVector
 example : (VariableRelabeling.swap 4 0 1 * VariableRelabeling.swap 4 1 2) 1 = 2 := by
   decide
 
+example : canonicalize noncanonicalActionVector ≠ noncanonicalActionVector := by
+  decide
+
 example :
     canonicalize (actOnVector (VariableRelabeling.id 4) zhangYeungAveragedScaled.vector (by decide))
       = canonicalize zhangYeungAveragedScaled.vector := by
@@ -94,6 +112,11 @@ example :
     (actOnVector zhangYeungSwapZeroOne zhangYeungAveragedScaled.vector zhangYeungSwapZeroOne_scope).IsInRange := by
   exact actOnVector_isInRange (vector := zhangYeungAveragedScaled.vector) (relabeling := zhangYeungSwapZeroOne)
     zhangYeungSwapZeroOne_scope (by decide)
+
+example :
+    canonicalize (actOnVector swapZeroOne noncanonicalActionVector noncanonicalActionVector_scope) =
+      canonicalize (actOnVector swapZeroOne (canonicalize noncanonicalActionVector) noncanonicalCanonical_scope) := by
+  decide
 
 example :
     canonicalize (actOnVector zhangYeungSwapZeroOne zhangYeungAveragedScaled.vector zhangYeungSwapZeroOne_scope)

@@ -9,7 +9,7 @@ from non_shannon_search.canonical import canonicalize_candidate
 import pytest
 
 from non_shannon_search.emit_lean import emit_swap_zero_one_module
-from non_shannon_search.schema import load_candidate
+from non_shannon_search.schema import CandidateInequality, Provenance, Term, load_candidate
 from non_shannon_search.symmetry import (
     apply_candidate,
     apply_subset,
@@ -44,6 +44,20 @@ EXPECTED_SWAP_ZERO_ONE_TERMS: tuple[tuple[tuple[int, ...], Fraction], ...] = (
     ((1, 2, 3), Fraction(5)),
 )
 
+NONCANONICAL_CANDIDATE = CandidateInequality(
+    id="synthetic-noncanonical",
+    label="Synthetic noncanonical candidate",
+    variable_count=4,
+    basis="joint_entropy",
+    terms=(
+        Term(subset=(2, 0), coefficient=Fraction(3)),
+        Term(subset=(3, 1), coefficient=Fraction(4)),
+        Term(subset=(0,), coefficient=Fraction(1)),
+    ),
+    provenance=Provenance(source="unit test", note=""),
+    status="reference",
+)
+
 
 def render_generated_swap_module() -> str:
     return emit_swap_zero_one_module(load_candidate(FIXTURE))
@@ -72,6 +86,10 @@ def test_action_composition_matches_sequential_application_after_canonicalizatio
     assert direct == sequential
 
 
+def test_compose_perm_falls_back_to_left_on_scope_mismatch() -> None:
+    assert compose_perm((1, 0), (0, 1, 2)) == (1, 0)
+
+
 def test_permuted_candidate_stays_within_declared_range() -> None:
     candidate = load_candidate(FIXTURE)
     permuted = apply_candidate(transposition(4, 0, 1), candidate)
@@ -89,6 +107,19 @@ def test_apply_candidate_rejects_scope_mismatch() -> None:
 
     with pytest.raises(ValueError, match="expected permutation of length 4"):
         apply_candidate(identity_perm(5), candidate)
+
+
+def test_action_commutes_with_precanonicalization_on_noncanonical_candidate() -> None:
+    perm = transposition(4, 0, 1)
+
+    assert NONCANONICAL_CANDIDATE != canonicalize_candidate(NONCANONICAL_CANDIDATE)
+
+    direct = canonicalize_candidate(apply_candidate(perm, NONCANONICAL_CANDIDATE))
+    after_precanonicalize = canonicalize_candidate(
+        apply_candidate(perm, canonicalize_candidate(NONCANONICAL_CANDIDATE))
+    )
+
+    assert direct == after_precanonicalize
 
 
 def test_swap_zero_one_matches_expected_canonical_terms() -> None:
