@@ -6,7 +6,9 @@ from fractions import Fraction
 from pathlib import Path
 
 from non_shannon_search.canonical import canonicalize_candidate
-from non_shannon_search.emit_lean import emit_candidate_module
+import pytest
+
+from non_shannon_search.emit_lean import emit_swap_zero_one_module
 from non_shannon_search.schema import load_candidate
 from non_shannon_search.symmetry import (
     apply_candidate,
@@ -25,8 +27,6 @@ GENERATED_FIXTURE = (
     / "Examples"
     / "ZhangYeungSwapZeroOneFromPython.lean"
 )
-GENERATED_CONSTANT_NAME = "zhangYeungSwapZeroOneFromPython"
-GENERATED_COMMENT = "Generated from Python's swap-zero-one Zhang-Yeung fixture. Keep in sync with tests/test_symmetry.py."
 
 EXPECTED_SWAP_ZERO_ONE_TERMS: tuple[tuple[tuple[int, ...], Fraction], ...] = (
     ((0,), Fraction(1)),
@@ -58,14 +58,7 @@ def compose_perm(left: tuple[int, ...], right: tuple[int, ...]) -> tuple[int, ..
 
 
 def render_generated_swap_module() -> str:
-    candidate = canonicalize_candidate(
-        apply_candidate(transposition(4, 0, 1), load_candidate(FIXTURE))
-    )
-    return emit_candidate_module(
-        candidate,
-        constant_name=GENERATED_CONSTANT_NAME,
-        comment=GENERATED_COMMENT,
-    )
+    return emit_swap_zero_one_module(load_candidate(FIXTURE))
 
 
 def test_apply_subset_normalizes_and_keeps_out_of_range_indices_fixed() -> None:
@@ -101,6 +94,13 @@ def test_permuted_candidate_stays_within_declared_range() -> None:
         for term in permuted.terms
         for index in term.subset
     )
+
+
+def test_apply_candidate_rejects_scope_mismatch() -> None:
+    candidate = load_candidate(FIXTURE)
+
+    with pytest.raises(ValueError, match="expected permutation of length 4"):
+        apply_candidate(identity_perm(5), candidate)
 
 
 def test_swap_zero_one_matches_expected_canonical_terms() -> None:

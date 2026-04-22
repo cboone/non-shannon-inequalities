@@ -7,7 +7,9 @@ from __future__ import annotations
 from fractions import Fraction
 import re
 
+from .canonical import canonicalize_candidate
 from .schema import CandidateInequality
+from .symmetry import apply_candidate, transposition
 
 
 LEAN_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_']*$")
@@ -121,4 +123,23 @@ def emit_candidate_module(
             "end NonShannonTest",
             "",
         ]
+    )
+
+
+SWAP_ZERO_ONE_CONSTANT_NAME = "zhangYeungSwapZeroOneFromPython"
+SWAP_ZERO_ONE_COMMENT = (
+    "Generated from Python's swap-zero-one Zhang-Yeung fixture. Keep in sync with tests/test_symmetry.py."
+)
+
+
+def emit_swap_zero_one_module(candidate: CandidateInequality) -> str:
+    """Emits the checked-in Lean module for the canonicalized swap-zero-one action on one candidate."""
+
+    swapped = canonicalize_candidate(
+        apply_candidate(transposition(candidate.variable_count, 0, 1), candidate)
+    )
+    return emit_candidate_module(
+        swapped,
+        constant_name=SWAP_ZERO_ONE_CONSTANT_NAME,
+        comment=SWAP_ZERO_ONE_COMMENT,
     )

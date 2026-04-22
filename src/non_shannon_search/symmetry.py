@@ -68,8 +68,12 @@ def apply_term(perm: Permutation, term: Term) -> Term:
 def apply_candidate(perm: Permutation, candidate: CandidateInequality) -> CandidateInequality:
     """Applies one scoped permutation termwise without canonicalizing the result."""
 
+    if len(perm) != candidate.variable_count:
+        raise ValueError(
+            f"expected permutation of length {candidate.variable_count}, got {len(perm)}"
+        )
+
     return replace(
         candidate,
-        variable_count=max(candidate.variable_count, len(perm)),
         terms=tuple(apply_term(perm, term) for term in candidate.terms),
     )
