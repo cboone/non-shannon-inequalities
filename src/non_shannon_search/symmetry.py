@@ -53,6 +53,16 @@ def _apply_index(perm: Permutation, index: int) -> int:
     return index
 
 
+def compose_perm(left: Permutation, right: Permutation) -> Permutation:
+    """Returns the scoped permutation whose action matches applying `right` then `left`.
+
+    Mirrors the Lean `Mul` instance on `VariableRelabeling`: for each `i` in the combined scope, the result at position `i` is `left(right(i))`, with out-of-scope indices treated as fixed.
+    """
+
+    scope = max(len(left), len(right))
+    return tuple(_apply_index(left, _apply_index(right, index)) for index in range(scope))
+
+
 def apply_subset(perm: Permutation, subset: tuple[int, ...]) -> tuple[int, ...]:
     """Applies one scoped permutation pointwise and returns the normalized subset."""
 

@@ -13,6 +13,7 @@ from non_shannon_search.schema import load_candidate
 from non_shannon_search.symmetry import (
     apply_candidate,
     apply_subset,
+    compose_perm,
     identity_perm,
     iter_symmetric_group,
     perm_from_tuple,
@@ -42,19 +43,6 @@ EXPECTED_SWAP_ZERO_ONE_TERMS: tuple[tuple[tuple[int, ...], Fraction], ...] = (
     ((0, 2, 3), Fraction(5)),
     ((1, 2, 3), Fraction(5)),
 )
-
-
-def compose_perm(left: tuple[int, ...], right: tuple[int, ...]) -> tuple[int, ...]:
-    """Returns the permutation whose action matches applying `right` then `left`."""
-
-    scope = max(len(left), len(right))
-
-    def apply_one(perm: tuple[int, ...], index: int) -> int:
-        if 0 <= index < len(perm):
-            return perm[index]
-        return index
-
-    return tuple(apply_one(left, apply_one(right, index)) for index in range(scope))
 
 
 def render_generated_swap_module() -> str:
