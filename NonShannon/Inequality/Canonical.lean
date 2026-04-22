@@ -36,6 +36,7 @@ private def vectorOrbitLt (first second : InequalityVector) : Bool :=
 private def orbitMin (first second : InequalityVector) : InequalityVector :=
   if vectorOrbitLt second first then second else first
 
+-- The orbit enumeration below acts on inequality vectors via raw `List Nat` permutation indices rather than routing through `NonShannon.Inequality.Symmetry`'s `VariableRelabeling` and `actOnVector`. The two actions are observationally identical on in-range subsets (both map each index through the permutation and then renormalize), and the end-to-end `NonShannonTest/Inequality/Orbit.lean` `example`s apply `actOnVector` on the test side to exercise the public symmetry surface. The private copy exists so the orbit loop stays structurally simple enough for kernel `decide` / `native_decide` on concrete Zhang-Yeung-scale vectors without threading `VariableRelabeling.ofPerm` bijection proofs through `(List.range n).permutations`. If `NonShannon.Inequality.Symmetry`'s action ever changes its behavior on out-of-range indices or its subset normalization, the helpers below must be updated in lockstep.
 private def applyPermutationIndex (values : List Nat) (var : Nat) : Nat :=
   values.getD var var
 
@@ -49,12 +50,8 @@ private def orbitImages (vector : InequalityVector) : List InequalityVector :=
   (List.range vector.variableCount).permutations.map fun values =>
     canonicalize (actOnVectorValues values vector)
 
-private def joinWith (separator : String) : List String → String
-  | [] => ""
-  | head :: tail => tail.foldl (fun acc part => acc ++ separator ++ part) head
-
 private def serializeSubset (subset : VariableSubset) : String :=
-  "[" ++ joinWith "," (subset.vars.map toString) ++ "]"
+  "[" ++ String.intercalate "," (subset.vars.map toString) ++ "]"
 
 private def serializeCoefficient (coefficient : Rat) : String :=
   let numerator := toString coefficient.num
@@ -77,7 +74,7 @@ def orbitIdOf (vector : InequalityVector) : String :=
   let representative := orbitCanonical vector
   match representative.terms.map serializeTerm with
   | [] => toString representative.variableCount ++ ";"
-  | serializedTerms => toString representative.variableCount ++ ";" ++ joinWith ";" serializedTerms
+  | serializedTerms => toString representative.variableCount ++ ";" ++ String.intercalate ";" serializedTerms
 
 /-- Predicate asserting that an inequality is fixed by the current canonicalizer. -/
 def isCanonical (vector : InequalityVector) : Prop :=
