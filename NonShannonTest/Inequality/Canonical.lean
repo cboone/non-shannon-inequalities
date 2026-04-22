@@ -124,4 +124,7 @@ example : canonicalize scrambledZhangYeungVector = zhangYeungAveragedScaled.vect
 example : canonicalize zhangYeungAveragedScaled.vector = zhangYeungAveragedScaled.vector := by
   decide
 
+example : canonicalize (canonicalize duplicateVector) = canonicalize duplicateVector := by
+  exact canonicalize_idempotent duplicateVector
+
 end NonShannonTest

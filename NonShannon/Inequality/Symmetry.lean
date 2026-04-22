@@ -87,17 +87,16 @@ def actOnSubset (relabeling : VariableRelabeling) (subset : VariableSubset) : Va
 def actOnTerm (relabeling : VariableRelabeling) (term : InequalityTerm) : InequalityTerm :=
   { term with subset := actOnSubset relabeling term.subset }
 
-/-- Applies a relabeling termwise to an inequality vector without re-canonicalizing it. The resulting scope covers both the original vector variables and the relabeling's declared support. -/
+/-- Applies a relabeling termwise to an inequality vector without re-canonicalizing it. The action preserves the vector's declared scope; callers that want range preservation must supply a relabeling whose declared scope stays within that scope. -/
 def actOnVector (relabeling : VariableRelabeling) (vector : InequalityVector) : InequalityVector :=
   { vector with
-    variableCount := max vector.variableCount relabeling.variableCount
     terms := vector.terms.map (actOnTerm relabeling) }
 
 /-- Applies a relabeling to one inequality term. -/
 def InequalityTerm.relabel (relabeling : VariableRelabeling) (term : InequalityTerm) : InequalityTerm :=
   actOnTerm relabeling term
 
-/-- Applies a relabeling pointwise to all terms of an inequality vector. The resulting scope covers both the original vector variables and the relabeling's declared support. -/
+/-- Applies a relabeling pointwise to all terms of an inequality vector. The action preserves the vector's declared scope; callers that want range preservation must supply a relabeling whose declared scope stays within that scope. -/
 def InequalityVector.relabel (relabeling : VariableRelabeling) (vector : InequalityVector) :
     InequalityVector :=
   actOnVector relabeling vector
@@ -120,5 +119,47 @@ theorem VariableRelabeling.actOnSubset_id (variableCount : Nat) (subset : Variab
       exact VariableRelabeling.id_apply variableCount var
     simp [VariableSubset.map, hFun]
   rw [hId]
+
+theorem VariableRelabeling.apply_lt_of_lt {relabeling : VariableRelabeling} {variableCount var : Nat}
+    (hScope : relabeling.variableCount ≤ variableCount) (hVar : var < variableCount) :
+    relabeling var < variableCount := by
+  by_cases hIn : var < relabeling.variableCount
+  · rw [VariableRelabeling.apply_of_lt hIn]
+    exact lt_of_lt_of_le (relabeling.perm ⟨var, hIn⟩).is_lt hScope
+  · rw [VariableRelabeling.apply_of_ge (Nat.le_of_not_lt hIn)]
+    exact hVar
+
+theorem VariableRelabeling.applySubset_isInRange {relabeling : VariableRelabeling}
+    {variableCount : Nat} {subset : VariableSubset}
+    (hScope : relabeling.variableCount ≤ variableCount) (hSubset : subset.IsInRange variableCount) :
+    (relabeling.applySubset subset).IsInRange variableCount := by
+  intro var hVar
+  change var ∈ subset.vars.map relabeling at hVar
+  rcases List.mem_map.1 hVar with ⟨previous, hPrevious, rfl⟩
+  exact relabeling.apply_lt_of_lt hScope (hSubset previous hPrevious)
+
+theorem VariableRelabeling.actOnSubset_isInRange {relabeling : VariableRelabeling}
+    {variableCount : Nat} {subset : VariableSubset}
+    (hScope : relabeling.variableCount ≤ variableCount) (hSubset : subset.IsInRange variableCount) :
+    (actOnSubset relabeling subset).IsInRange variableCount := by
+  intro var hVar
+  have hVar' : var ∈ (relabeling.applySubset subset).vars :=
+    (VariableSubset.mem_normalize (subset := relabeling.applySubset subset) (var := var)).1 hVar
+  exact relabeling.applySubset_isInRange hScope hSubset var hVar'
+
+theorem InequalityTerm.relabel_isInRange {relabeling : VariableRelabeling} {variableCount : Nat}
+    {term : InequalityTerm} (hScope : relabeling.variableCount ≤ variableCount)
+    (hTerm : term.IsInRange variableCount) :
+    (term.relabel relabeling).IsInRange variableCount :=
+  relabeling.actOnSubset_isInRange hScope hTerm
+
+theorem InequalityVector.relabel_isInRange {relabeling : VariableRelabeling} {vector : InequalityVector}
+    (hScope : relabeling.variableCount ≤ vector.variableCount) (hVector : vector.IsInRange) :
+    (vector.relabel relabeling).IsInRange := by
+  intro term hTerm
+  rw [InequalityVector.relabel, actOnVector] at hTerm
+  rw [List.mem_map] at hTerm
+  rcases hTerm with ⟨previous, hPrevious, rfl⟩
+  exact previous.relabel_isInRange hScope (hVector previous hPrevious)
 
 end NonShannon
