@@ -16,6 +16,8 @@ Permutation = tuple[int, ...]
 def perm_from_tuple(n: int, values: tuple[int, ...]) -> Permutation:
     """Validates and returns one scoped permutation of `range(n)`."""
 
+    if n < 0:
+        raise ValueError(f"expected non-negative scope, got {n}")
     if len(values) != n:
         raise ValueError(f"expected permutation of length {n}, got {len(values)}")
     if sorted(values) != list(range(n)):

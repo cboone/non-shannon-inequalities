@@ -153,6 +153,11 @@ def test_iter_symmetric_group_yields_all_elements_for_s3() -> None:
     assert len(tuple(iter_symmetric_group(3))) == 6
 
 
+def test_perm_from_tuple_rejects_negative_scope() -> None:
+    with pytest.raises(ValueError, match="expected non-negative scope"):
+        perm_from_tuple(-1, ())
+
+
 def test_identity_perm_rejects_negative_scope() -> None:
     with pytest.raises(ValueError, match="expected non-negative scope"):
         identity_perm(-1)
