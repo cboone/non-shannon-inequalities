@@ -87,6 +87,20 @@ def test_emit_candidate_constant_renders_rational_coefficients() -> None:
         assert isinstance(term.coefficient, Fraction)
 
 
+def test_emit_candidate_constant_emits_orbit_id_when_present() -> None:
+    candidate = load_candidate(FIXTURE)
+    source = emit_candidate_constant(candidate)
+
+    assert f'orbitId := some "{candidate.orbit_id}"' in source
+
+
+def test_emit_candidate_constant_omits_orbit_id_when_absent() -> None:
+    candidate = replace(load_candidate(FIXTURE), orbit_id=None)
+    source = emit_candidate_constant(candidate)
+
+    assert "orbitId :=" not in source
+
+
 def test_emit_candidate_constant_rejects_invalid_derived_identifier() -> None:
     candidate = replace(load_candidate(FIXTURE), id="1st candidate")
     with pytest.raises(ValueError, match="valid Lean identifier"):

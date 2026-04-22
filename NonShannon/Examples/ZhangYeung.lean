@@ -49,6 +49,7 @@ def zhangYeungAveragedScaled : CandidateInequality :=
     provenance :=
       { source := "Zhang and Yeung (1998), eq. 23"
         note := "Reference fixture imported during bootstrap from the sibling formalization project." }
+    orbitId := some "4;[0]:1;[1]:1;[2]:4;[3]:4;[0,1]:2;[0,2]:-4;[0,3]:-4;[1,2]:-4;[1,3]:-4;[2,3]:-6;[0,2,3]:5;[1,2,3]:5"
     status := .reference }
 
 /-- Catalog entry for the Zhang-Yeung reference fixture. -/
