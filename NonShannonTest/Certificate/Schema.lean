@@ -25,6 +25,14 @@ example : candidate.status = .candidate := rfl
 
 example : candidate.vector.variableCount = 4 := rfl
 
+example : candidate.orbitId = none := rfl
+
+example : ({ candidate with orbitId := some "fixture-orbit" }).orbitId = some "fixture-orbit" := rfl
+
+example : ({ candidate with orbitId := some "fixture-orbit", symmetryOrbitSize? := some 24 }).orbitId = some "fixture-orbit" := rfl
+
+example : ({ candidate with orbitId := some "fixture-orbit", symmetryOrbitSize? := some 24 }).symmetryOrbitSize? = some 24 := rfl
+
 example : certificate.sources.length = 1 := rfl
 
 end NonShannonTest

@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+import json
 from fractions import Fraction
 from pathlib import Path
 
@@ -9,9 +10,11 @@ import jsonschema
 import pytest
 
 from non_shannon_search.schema import (
+    CandidateInequality,
     RedundancyCertificate,
     Term,
     load_candidate,
+    validate_candidate_dict,
     validate_candidate_path,
     validate_redundancy_certificate_dict,
 )
@@ -41,6 +44,7 @@ def test_fixture_loads_as_reference_candidate() -> None:
 
     assert candidate.id == "zhang-yeung-averaged-scaled"
     assert candidate.variable_count == 4
+    assert candidate.orbit_id is not None
     assert candidate.status == "reference"
 
 
@@ -84,3 +88,31 @@ def test_redundancy_certificate_rejects_malformed_weight() -> None:
     }
     with pytest.raises(jsonschema.ValidationError):
         validate_redundancy_certificate_dict(payload)
+
+
+def test_candidate_schema_accepts_payload_without_orbit_id() -> None:
+    payload = json.loads(FIXTURE.read_text())
+    payload.pop("orbit_id", None)
+
+    validate_candidate_dict(payload)
+
+
+def test_candidate_schema_accepts_null_orbit_id() -> None:
+    payload = json.loads(FIXTURE.read_text())
+    payload["orbit_id"] = None
+
+    validate_candidate_dict(payload)
+
+
+def test_candidate_schema_accepts_string_orbit_id() -> None:
+    payload = json.loads(FIXTURE.read_text())
+    payload["orbit_id"] = "4;[0]:1"
+
+    validate_candidate_dict(payload)
+
+
+def test_candidate_orbit_id_round_trips_through_schema_model() -> None:
+    payload = json.loads(FIXTURE.read_text())
+    candidate = CandidateInequality.from_dict(payload)
+
+    assert CandidateInequality.from_dict(candidate.to_dict()) == candidate

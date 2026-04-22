@@ -27,6 +27,8 @@ structure CandidateInequality where
   provenance : Provenance
   /-- Optional reference to a tracked copy-lemma parameter payload. -/
   copyParametersRef? : Option String := none
+  /-- Optional orbit identifier for the lex-minimum scoped symmetry representative. -/
+  orbitId : Option String := none
   /-- Optional symmetry-orbit size when known externally. -/
   symmetryOrbitSize? : Option Nat := none
   /-- Current lifecycle state inside the research pipeline. -/

@@ -41,6 +41,10 @@
     "copy_parameters_ref": {
       "type": ["string", "null"]
     },
+    "orbit_id": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
     "symmetry_orbit_size": {
       "type": ["integer", "null"],
       "minimum": 1
