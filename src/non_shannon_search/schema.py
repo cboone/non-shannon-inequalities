@@ -115,6 +115,7 @@ class CandidateInequality:
     provenance: Provenance
     status: str
     copy_parameters_ref: str | None = None
+    orbit_id: str | None = None
     symmetry_orbit_size: int | None = None
 
     @classmethod
@@ -129,6 +130,7 @@ class CandidateInequality:
             provenance=Provenance.from_dict(data["provenance"]),
             status=data["status"],
             copy_parameters_ref=data.get("copy_parameters_ref"),
+            orbit_id=data.get("orbit_id"),
             symmetry_orbit_size=data.get("symmetry_orbit_size"),
         )
 
@@ -141,6 +143,7 @@ class CandidateInequality:
             "terms": [term.to_dict() for term in self.terms],
             "provenance": self.provenance.to_dict(),
             "copy_parameters_ref": self.copy_parameters_ref,
+            "orbit_id": self.orbit_id,
             "symmetry_orbit_size": self.symmetry_orbit_size,
             "status": self.status,
         }

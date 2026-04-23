@@ -7,7 +7,9 @@ from __future__ import annotations
 from fractions import Fraction
 import re
 
-from .canonical import canonicalize_candidate
+from dataclasses import replace
+
+from .canonical import canonicalize_candidate, orbit_id_of
 from .schema import CandidateInequality
 from .symmetry import apply_candidate, transposition
 
@@ -87,6 +89,9 @@ def emit_candidate_constant(candidate: CandidateInequality, constant_name: str |
         )
         + " ]"
     )
+    orbit_id_line = ""
+    if candidate.orbit_id is not None:
+        orbit_id_line = f"    orbitId := some {format_lean_string(candidate.orbit_id)}\n"
     return (
         f"def {name} : CandidateInequality :=\n"
         f"  {{ id := {format_lean_string(candidate.id)}\n"
@@ -97,6 +102,7 @@ def emit_candidate_constant(candidate: CandidateInequality, constant_name: str |
         f"        terms :=\n"
         f"{terms_block} }}\n"
         f"    provenance := {{ source := {format_lean_string(candidate.provenance.source)}, note := {format_lean_string(candidate.provenance.note)} }}\n"
+        f"{orbit_id_line}"
         f"    status := .{candidate.status} }}"
     )
 
@@ -159,8 +165,9 @@ def emit_swap_zero_one_module(candidate: CandidateInequality) -> str:
     """Emits the checked-in Lean module for the canonicalized swap-zero-one action on one candidate."""
 
     validate_swap_zero_one_candidate(candidate)
-    swapped = canonicalize_candidate(
-        apply_candidate(transposition(candidate.variable_count, 0, 1), candidate)
+    swapped = replace(
+        canonicalize_candidate(apply_candidate(transposition(candidate.variable_count, 0, 1), candidate)),
+        orbit_id=orbit_id_of(candidate),
     )
     return emit_candidate_module(
         swapped,

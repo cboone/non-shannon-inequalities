@@ -8,8 +8,9 @@ import argparse
 import json
 from pathlib import Path
 import sys
+from dataclasses import replace
 
-from .canonical import canonicalize_candidate
+from .canonical import canonicalize_candidate, orbit_id_of
 from .emit_lean import emit_candidate_constant, emit_swap_zero_one_module
 from .schema import load_candidate, validate_candidate_path
 
@@ -50,7 +51,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "canonicalize":
-        candidate = canonicalize_candidate(load_candidate(args.path))
+        source = load_candidate(args.path)
+        candidate = replace(canonicalize_candidate(source), orbit_id=orbit_id_of(source))
         json.dump(candidate.to_dict(), sys.stdout, indent=2)
         sys.stdout.write("\n")
         return 0

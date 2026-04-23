@@ -2,10 +2,11 @@
 #
 # SPDX-License-Identifier: MIT
 
+import re
 from fractions import Fraction
 from pathlib import Path
 
-from non_shannon_search.canonical import canonicalize_candidate
+from non_shannon_search.canonical import canonicalize_candidate, orbit_canonical, orbit_id_of
 import pytest
 
 from non_shannon_search.emit_lean import emit_swap_zero_one_module
@@ -22,6 +23,12 @@ from non_shannon_search.symmetry import (
 
 
 FIXTURE = Path(__file__).resolve().parents[1] / "data" / "fixtures" / "zhang-yeung.json"
+GENERATED_ORBIT_FIXTURE = (
+    Path(__file__).resolve().parents[1]
+    / "NonShannonTest"
+    / "Examples"
+    / "ZhangYeungFromPython.lean"
+)
 GENERATED_FIXTURE = (
     Path(__file__).resolve().parents[1]
     / "NonShannonTest"
@@ -61,6 +68,13 @@ NONCANONICAL_CANDIDATE = CandidateInequality(
 
 def render_generated_swap_module() -> str:
     return emit_swap_zero_one_module(load_candidate(FIXTURE))
+
+
+def extract_orbit_id_literal(source: str) -> str:
+    match = re.search(r'orbitId := some "([^"]+)"', source)
+    if match is None:
+        raise AssertionError("expected an orbitId literal in generated Lean source")
+    return match.group(1)
 
 
 def test_apply_subset_normalizes_and_keeps_out_of_range_indices_fixed() -> None:
@@ -171,6 +185,23 @@ def test_transposition_rejects_negative_scope() -> None:
 def test_iter_symmetric_group_rejects_negative_scope() -> None:
     with pytest.raises(ValueError, match="expected non-negative scope"):
         next(iter_symmetric_group(-1))
+
+
+def test_orbit_representation_is_invariant_across_all_of_s4() -> None:
+    candidate = load_candidate(FIXTURE)
+    expected_canonical = orbit_canonical(candidate)
+    expected_orbit_id = orbit_id_of(candidate)
+
+    for perm in iter_symmetric_group(4):
+        permuted = apply_candidate(perm, candidate)
+        assert orbit_canonical(permuted) == expected_canonical
+        assert orbit_id_of(permuted) == expected_orbit_id
+
+
+def test_cross_language_orbit_id_parity_matches_generated_lean_fixture() -> None:
+    candidate = load_candidate(FIXTURE)
+
+    assert extract_orbit_id_literal(GENERATED_ORBIT_FIXTURE.read_text()) == orbit_id_of(candidate)
 
 
 def test_generated_zhang_yeung_swap_module_matches_python_emitter() -> None:
