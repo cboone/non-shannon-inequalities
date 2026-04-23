@@ -45,12 +45,14 @@ def transposition(n: int, i: int, j: int) -> Permutation:
 
 
 def iter_symmetric_group(n: int):
-    """Yields every element of `S_n` for `0 <= n <= 6`."""
+    """Yields every element of `S_n` lazily.
+
+    The iterator is valid for any non-negative `n`, but callers still pay the
+    full factorial cost of orbit enumeration.
+    """
 
     if n < 0:
         raise ValueError(f"expected non-negative scope, got {n}")
-    if n > 6:
-        raise ValueError("iter_symmetric_group only supports n <= 6")
     for values in permutations(range(n)):
         yield tuple(values)
 

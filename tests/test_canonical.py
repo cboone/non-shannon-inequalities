@@ -5,6 +5,7 @@
 # cspell:ignore capsys
 
 import json
+from dataclasses import replace
 from fractions import Fraction
 from pathlib import Path
 
@@ -150,6 +151,46 @@ def test_orbit_id_of_uses_pinned_serialization() -> None:
     )
 
     assert orbit_id_of(candidate) == "4;[0]:1/3;[1]:-7;[2]:-3/2;[3]:5"
+
+
+def test_orbit_id_of_supports_schema_valid_seven_variable_candidate() -> None:
+    candidate = CandidateInequality(
+        id="synthetic-seven-variable",
+        label="Synthetic seven-variable candidate",
+        variable_count=7,
+        basis="joint_entropy",
+        terms=(Term(subset=(0,), coefficient=Fraction(1)),),
+        provenance=Provenance(source="synthetic"),
+        status="reference",
+    )
+
+    assert orbit_id_of(candidate) == "7;[0]:1"
+
+
+def test_orbit_canonical_preserves_metadata_while_orbit_id_identifies_equivalence() -> None:
+    candidate = load_candidate(FIXTURE)
+    metadata_variant = replace(
+        candidate,
+        id="zhang-yeung-metadata-variant",
+        label="Zhang-Yeung metadata variant",
+        provenance=Provenance(source="synthetic", note="metadata should survive orbit canonicalization"),
+        status="candidate",
+        copy_parameters_ref="copy-params-fixture",
+        symmetry_orbit_size=24,
+    )
+
+    canonical = orbit_canonical(candidate)
+    metadata_canonical = orbit_canonical(metadata_variant)
+
+    assert metadata_canonical.terms == canonical.terms
+    assert metadata_canonical.orbit_id == canonical.orbit_id
+    assert metadata_canonical.id == metadata_variant.id
+    assert metadata_canonical.label == metadata_variant.label
+    assert metadata_canonical.provenance == metadata_variant.provenance
+    assert metadata_canonical.status == metadata_variant.status
+    assert metadata_canonical.copy_parameters_ref == metadata_variant.copy_parameters_ref
+    assert metadata_canonical.symmetry_orbit_size == metadata_variant.symmetry_orbit_size
+    assert metadata_canonical != canonical
 
 
 def test_canonicalize_cli_emits_within_inequality_terms_and_populates_orbit_id(tmp_path: Path, capsys) -> None:

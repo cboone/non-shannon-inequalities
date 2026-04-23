@@ -84,7 +84,13 @@ def _orbit_representative(candidate: CandidateInequality) -> CandidateInequality
 
 
 def orbit_canonical(candidate: CandidateInequality) -> CandidateInequality:
-    """Returns the lex-minimum M1a-canonical representative in the scoped symmetry orbit."""
+    """Returns the lex-minimum M1a-canonical representative in the scoped symmetry orbit.
+
+    The returned candidate keeps the caller's non-vector metadata (`id`, `label`,
+    provenance, status, and other optional fields) and only rewrites the term list
+    plus `orbit_id`. Use `orbit_id` to compare or deduplicate orbit-equivalent
+    candidates rather than whole-object equality.
+    """
 
     representative = _orbit_representative(candidate)
     return replace(representative, orbit_id=_orbit_id_from_representative(representative))
