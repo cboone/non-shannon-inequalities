@@ -92,7 +92,7 @@ M2 splits parameter invariants into two predicates.
 - `CopyParameters.IsCanonical` requires the frozen, copied, and conditioning subsets to be in range and normalized.
 - `CopyParameters.IsWellFormed` extends `IsCanonical` with pairwise disjointness of the three structural subsets.
 
-The statement-equivalence bridge uses `IsCanonical`, because `CopyLemmaStatement.ofParameters` stores every statement-bearing field directly. `IsWellFormed` remains the stronger predicate for downstream search code that wants disjoint candidate blocks.
+The statement-equivalence bridge has an unconditional core, `CopyParameters.sameStatementShape_iff_ofParameters_sameShape_core`, because `CopyLemmaStatement.ofParameters` stores every statement-bearing field directly. The wrapper `CopyParameters.sameStatementShape_iff_ofParameters_sameShape` keeps the `IsCanonical` hypotheses in the public invariant boundary expected by downstream search code. `IsWellFormed` remains the stronger predicate for callers that also want disjoint candidate blocks.
 
 ## Structural Projection
 

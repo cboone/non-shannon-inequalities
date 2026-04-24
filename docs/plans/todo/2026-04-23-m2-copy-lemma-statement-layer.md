@@ -95,7 +95,7 @@ structure CopyParameters.IsWellFormed (params : CopyParameters) : Prop extends
 
 All nine components are `Decidable` (either via M1a/M1b or via the `Decidable List.Disjoint` instance), so both predicates are checkable by `decide` on Zhang-Yeung-scale fixtures. `copyCount` intentionally has no lower-bound constraint: `copyCount = 0` is the degenerate no-copy case and is legitimate at this layer, to match how M3's future oracle may treat "no copies required" as a sentinel. The simplified statement shape above keeps the underlying `copied` and `conditioning` data in `copyPrototype`, so the bridge theorem does not need to exclude the zero-copy case.
 
-Why the bridge theorem uses only `IsCanonical`. The reverse direction reads back `frozen`, `copyPrototype.copied`, `copyPrototype.conditioning`, and `copyCount` directly from `CopyLemmaStatement`'s separately-stored fields. Because those fields are normalized (and `actOnSubset` always normalizes its output via `VariableSubset.normalize`), `VariableSubset.eq_of_isNormalized_of_mem_iff` from `NonShannon/Inequality/Subsets.lean` forces parameter-side equality componentwise. Disjointness across blocks is not what makes that argument go through; in-range-ness and normalization are. `IsWellFormed` remains the predicate downstream M5 search will check on candidate parameter sets, but the bridge theorem is stated at its true strength.
+Why the bridge theorem has an unconditional core. The reverse direction reads back `frozen`, `copyPrototype.copied`, `copyPrototype.conditioning`, and `copyCount` directly from `CopyLemmaStatement`'s separately stored fields. Since `CopyLemmaStatement.ofParameters` stores every statement-bearing field, the projection is structurally injective on `CopyParameters.statementShape`; the proof does not need normalized-uniqueness or any `IsCanonical` hypothesis. M2 therefore exposes `CopyParameters.sameStatementShape_iff_ofParameters_sameShape_core` at this true strength and keeps `CopyParameters.sameStatementShape_iff_ofParameters_sameShape` as the planned canonical-hypothesis wrapper for downstream M5 callers that already carry the invariant. `IsWellFormed` remains the stronger predicate downstream search code will check on candidate parameter sets.
 
 Naming note: both predicates use the `IsX` capitalization convention (matching the existing `VariableSubset.IsInRange` in `NonShannon/Inequality/Subsets.lean`). `VariableSubset.Disjoint` follows the same convention.
 
@@ -192,7 +192,16 @@ def CopyLemmaStatement.SameShape (s t : CopyLemmaStatement) : Prop :=
       t = s.relabel r h
 ```
 
-The characterization lemma, which is M2's first nontrivial statement-layer result:
+The unconditional characterization core, which is M2's first nontrivial statement-layer result:
+
+```lean
+theorem CopyParameters.sameStatementShape_iff_ofParameters_sameShape_core
+    {a b : CopyParameters} :
+    a.SameStatementShape b ↔
+      (CopyLemmaStatement.ofParameters a).SameShape (CopyLemmaStatement.ofParameters b)
+```
+
+The canonical-hypothesis wrapper preserves the roadmap-facing invariant boundary for downstream consumers:
 
 ```lean
 theorem CopyParameters.sameStatementShape_iff_ofParameters_sameShape
@@ -202,7 +211,7 @@ theorem CopyParameters.sameStatementShape_iff_ofParameters_sameShape
       (CopyLemmaStatement.ofParameters a).SameShape (CopyLemmaStatement.ofParameters b)
 ```
 
-The forward direction follows from `ofParameters_relabel` (the commuting square). The reverse direction extracts the witness relabeling from the statement-level equivalence and reconstructs parameter-level structural equivalence by reading back the relabeled `frozen`, `copyPrototype.copied`, `copyPrototype.conditioning`, and `copyCount` from the statement's fields. The reverse is the nontrivial half but uses only `IsCanonical`: each of `frozen`, `copyPrototype.copied`, and `copyPrototype.conditioning` is stored separately on `CopyLemmaStatement` and normalized independently by `actOnSubset`, so the in-range and normalization invariants of `IsCanonical` are sufficient for the uniqueness-of-normalized-representatives argument supplied by `VariableSubset.eq_of_isNormalized_of_mem_iff`; disjointness across blocks is not load-bearing here. The simplified `copyPrototype` field is what makes the reverse direction remain true in the legitimate `copyCount = 0` case, and the structural projection is what prevents `label` or user-supplied `conditionalIndependence` metadata from falsifying the parameter-side equivalence. Downstream M5 callers that hold the stronger `IsWellFormed` invariant pass through the `IsWellFormed.toIsCanonical` projection.
+The forward direction follows from `ofParameters_relabel` (the commuting square). The reverse direction extracts the witness relabeling from the statement-level equivalence and reconstructs parameter-level structural equivalence by reading back the relabeled `frozen`, `copyPrototype.copied`, `copyPrototype.conditioning`, and `copyCount` from the statement's fields. Because these fields are stored directly, the core proof is unconditional. The simplified `copyPrototype` field is what makes the reverse direction remain true in the legitimate `copyCount = 0` case, and the structural projection is what prevents `label` or user-supplied `conditionalIndependence` metadata from falsifying the parameter-side equivalence. Downstream M5 callers that hold the stronger `IsWellFormed` invariant pass through the `IsWellFormed.toIsCanonical` projection and cite the wrapped theorem.
 
 ### 5. Removed: placeholder `parameterizedCopyLemma` surface
 
@@ -219,7 +228,7 @@ Rationale: keeping trivially-true placeholder aliases past M2 creates a maintena
 - **Theorem-name template** for future-generated copy-lemma statements: `copyLemma_<familyDescriptor>_<orbitDigest>`, where `<familyDescriptor>` is a short ASCII tag chosen by the generator (for example, `zhangYeung`, `dfz31`) and `<orbitDigest>` is a short prefix of the parameter set's orbit ID. The orbit-ID format is already frozen by M1c.
 - **Module-name template**: `NonShannon.CopyLemma.Generated.<family>`, with one module per generator family. Deliberately disjoint from the hand-authored `NonShannon.Examples.*` modules so generator output cannot collide with curated fixtures.
 - **Interaction with `ParameterizedCopyLemmaTarget`**: the `theoremName` and `moduleName` fields are expected to follow the templates above going forward. M2 does not mechanically enforce this (the fields remain `String`); enforcement is a candidate for a later milestone if drift is observed.
-- **Frozen statement-shape snapshot**: the exact field layout of `CopyLemmaStatement` (with `copyPrototype` plus `copyCount` and a derived `copies` view, no stored `copies` field) and `CopyBlock` as of M2 closure, together with the frozen derivation rule for `independence` and a note that the `IsCanonical` / `IsWellFormed` split is the load-bearing one for the bridge theorem. Any future refactor of the shape must be accompanied by an explicit roadmap note acknowledging the break. Matches the "statement shape frozen" gate in the roadmap's M2 checkpoint.
+- **Frozen statement-shape snapshot**: the exact field layout of `CopyLemmaStatement` (with `copyPrototype` plus `copyCount` and a derived `copies` view, no stored `copies` field) and `CopyBlock` as of M2 closure, together with the frozen derivation rule for `independence`, the unconditional bridge core, and the canonical-wrapper boundary used by downstream consumers. Any future refactor of the shape must be accompanied by an explicit roadmap note acknowledging the break. Matches the "statement shape frozen" gate in the roadmap's M2 checkpoint.
 
 The document is short (roughly 80 to 120 lines) and stabilizes conventions rather than introducing new machinery.
 

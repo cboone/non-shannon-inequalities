@@ -74,6 +74,25 @@ example :
   CopyLemmaStatement.ofParameters_relabel bootstrapParams swapZeroOne swapZeroOne_scope
 
 example :
+    ((CopyLemmaStatement.ofParameters bootstrapParams).relabel swapZeroOne swapZeroOne_scope).variableCount =
+      (CopyLemmaStatement.ofParameters bootstrapParams).variableCount :=
+  CopyLemmaStatement.relabel_variableCount (CopyLemmaStatement.ofParameters bootstrapParams)
+    swapZeroOne swapZeroOne_scope
+
+example :
+    CopyLemmaStatement.inducedIndependence
+        (bootstrapParams.relabel swapZeroOne swapZeroOne_scope) =
+      (CopyLemmaStatement.inducedIndependence bootstrapParams).map (·.relabel swapZeroOne) :=
+  CopyLemmaStatement.inducedIndependence_relabel bootstrapParams swapZeroOne swapZeroOne_scope
+
+example :
+    bootstrapParams.SameStatementShape (bootstrapParams.relabel swapZeroOne swapZeroOne_scope) ↔
+      (CopyLemmaStatement.ofParameters bootstrapParams).SameShape
+        (CopyLemmaStatement.ofParameters
+          (bootstrapParams.relabel swapZeroOne swapZeroOne_scope)) :=
+  CopyParameters.sameStatementShape_iff_ofParameters_sameShape_core
+
+example :
     zeroCopyParams.SameStatementShape zeroCopyParams ↔
       (CopyLemmaStatement.ofParameters zeroCopyParams).SameShape
         (CopyLemmaStatement.ofParameters zeroCopyParams) :=
