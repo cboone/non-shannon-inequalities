@@ -47,12 +47,7 @@ def VariableSubset.Disjoint (first second : VariableSubset) : Prop :=
   first.vars.Disjoint second.vars
 
 instance (first second : VariableSubset) : Decidable (first.Disjoint second) :=
-  decidable_of_iff (∀ var ∈ first.vars, var ∉ second.vars) (by
-    constructor
-    · intro hDisjoint var hFirst
-      exact (List.disjoint_left.1 hDisjoint) hFirst
-    · intro hDisjoint
-      exact List.disjoint_left.2 fun {var} hFirst => hDisjoint hFirst)
+  decidable_of_iff (∀ var ∈ first.vars, var ∉ second.vars) List.disjoint_left.symm
 
 /-- The statement-bearing structural projection of copy-lemma parameters, forgetting labels and user annotations. -/
 structure CopyParameterShape where
