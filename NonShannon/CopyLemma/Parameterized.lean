@@ -106,13 +106,10 @@ private theorem CopyLemmaStatement.statementShape_eq_of_ofParameters_eq {first s
   cases hStatement
   rfl
 
-/-- Parameter-side statement-shape equivalence is exactly statement-side shape equivalence after projection. The canonical hypotheses record the intended M2 invariant boundary; the projection itself stores all statement-bearing fields directly. -/
-theorem CopyParameters.sameStatementShape_iff_ofParameters_sameShape {first second : CopyParameters}
-    (hFirst : first.IsCanonical) (hSecond : second.IsCanonical) :
+/-- Parameter-side statement-shape equivalence is exactly statement-side shape equivalence after projection. The bridge holds unconditionally: `CopyLemmaStatement.ofParameters` stores every statement-bearing field directly, so the projection is injective on the structural shape regardless of canonicalization. Callers holding `IsCanonical` should prefer the wrapped alias `sameStatementShape_iff_ofParameters_sameShape`. -/
+theorem CopyParameters.sameStatementShape_iff_ofParameters_sameShape_core {first second : CopyParameters} :
     first.SameStatementShape second ↔
       (CopyLemmaStatement.ofParameters first).SameShape (CopyLemmaStatement.ofParameters second) := by
-  cases hFirst
-  cases hSecond
   constructor
   · rintro ⟨hVariableCount, relabeling, hScope, hShape⟩
     refine ⟨hVariableCount, relabeling, hScope, ?_⟩
@@ -129,6 +126,13 @@ theorem CopyParameters.sameStatementShape_iff_ofParameters_sameShape {first seco
       simpa [CopyLemmaStatement.ofParameters_relabel] using hStatement
     have hShape := CopyLemmaStatement.statementShape_eq_of_ofParameters_eq hStatement'
     simpa [CopyParameters.statementShape_relabel] using hShape
+
+/-- Parameter-side statement-shape equivalence is exactly statement-side shape equivalence after projection. This is the canonical-hypothesis wrapper around `sameStatementShape_iff_ofParameters_sameShape_core`; the canonical hypotheses record the intended M2 invariant boundary for downstream consumers (for example, M5 search) even though the underlying bridge holds unconditionally. -/
+theorem CopyParameters.sameStatementShape_iff_ofParameters_sameShape {first second : CopyParameters}
+    (_hFirst : first.IsCanonical) (_hSecond : second.IsCanonical) :
+    first.SameStatementShape second ↔
+      (CopyLemmaStatement.ofParameters first).SameShape (CopyLemmaStatement.ofParameters second) :=
+  CopyParameters.sameStatementShape_iff_ofParameters_sameShape_core
 
 attribute [nolint unusedArguments] CopyParameters.sameStatementShape_iff_ofParameters_sameShape
 
