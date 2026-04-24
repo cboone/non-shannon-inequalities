@@ -25,6 +25,7 @@ docstrings
 Dougherty
 doughertyfreilingzeger
 Ehmke
+elementwise
 entropic
 equivariant
 extensionless
@@ -33,8 +34,9 @@ Finset
 Fintype
 foldl
 forall
-Frantisek
 formalizable
+formedness
+Frantisek
 Freiling
 funext
 Gattegno
