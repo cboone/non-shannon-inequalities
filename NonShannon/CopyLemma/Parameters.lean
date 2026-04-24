@@ -102,26 +102,25 @@ structure CopyParameters.IsCanonical (params : CopyParameters) : Prop where
   conditioningNormalized : params.conditioning.isNormalized
 
 instance (params : CopyParameters) : Decidable params.IsCanonical :=
-  by
-    by_cases hFrozenInRange : params.frozen.IsInRange params.variableCount
-    · by_cases hCopiedInRange : params.copied.IsInRange params.variableCount
-      · by_cases hConditioningInRange : params.conditioning.IsInRange params.variableCount
-        · by_cases hFrozenNormalized : params.frozen.isNormalized
-          · by_cases hCopiedNormalized : params.copied.isNormalized
-            · by_cases hConditioningNormalized : params.conditioning.isNormalized
-              · exact isTrue
-                  { frozenInRange := hFrozenInRange
-                    copiedInRange := hCopiedInRange
-                    conditioningInRange := hConditioningInRange
-                    frozenNormalized := hFrozenNormalized
-                    copiedNormalized := hCopiedNormalized
-                    conditioningNormalized := hConditioningNormalized }
-              · exact isFalse fun hCanonical => hConditioningNormalized hCanonical.conditioningNormalized
-            · exact isFalse fun hCanonical => hCopiedNormalized hCanonical.copiedNormalized
-          · exact isFalse fun hCanonical => hFrozenNormalized hCanonical.frozenNormalized
-        · exact isFalse fun hCanonical => hConditioningInRange hCanonical.conditioningInRange
-      · exact isFalse fun hCanonical => hCopiedInRange hCanonical.copiedInRange
-    · exact isFalse fun hCanonical => hFrozenInRange hCanonical.frozenInRange
+  decidable_of_iff
+    (params.frozen.IsInRange params.variableCount ∧
+      params.copied.IsInRange params.variableCount ∧
+      params.conditioning.IsInRange params.variableCount ∧
+      params.frozen.isNormalized ∧
+      params.copied.isNormalized ∧
+      params.conditioning.isNormalized)
+    ⟨fun ⟨hFrozenInRange, hCopiedInRange, hConditioningInRange,
+          hFrozenNormalized, hCopiedNormalized, hConditioningNormalized⟩ =>
+      { frozenInRange := hFrozenInRange
+        copiedInRange := hCopiedInRange
+        conditioningInRange := hConditioningInRange
+        frozenNormalized := hFrozenNormalized
+        copiedNormalized := hCopiedNormalized
+        conditioningNormalized := hConditioningNormalized },
+      fun hCanonical =>
+        ⟨hCanonical.frozenInRange, hCanonical.copiedInRange, hCanonical.conditioningInRange,
+          hCanonical.frozenNormalized, hCanonical.copiedNormalized,
+          hCanonical.conditioningNormalized⟩⟩
 
 /-- Well-formed copy-lemma parameters add pairwise disjointness to canonical structural subsets. -/
 structure CopyParameters.IsWellFormed (params : CopyParameters) : Prop extends
@@ -134,20 +133,19 @@ structure CopyParameters.IsWellFormed (params : CopyParameters) : Prop extends
   copiedConditioningDisjoint : params.copied.Disjoint params.conditioning
 
 instance (params : CopyParameters) : Decidable params.IsWellFormed :=
-  by
-    by_cases hCanonical : params.IsCanonical
-    · by_cases hFrozenCopied : params.frozen.Disjoint params.copied
-      · by_cases hFrozenConditioning : params.frozen.Disjoint params.conditioning
-        · by_cases hCopiedConditioning : params.copied.Disjoint params.conditioning
-          · exact isTrue
-              { toIsCanonical := hCanonical
-                frozenCopiedDisjoint := hFrozenCopied
-                frozenConditioningDisjoint := hFrozenConditioning
-                copiedConditioningDisjoint := hCopiedConditioning }
-          · exact isFalse fun hWellFormed => hCopiedConditioning hWellFormed.copiedConditioningDisjoint
-        · exact isFalse fun hWellFormed => hFrozenConditioning hWellFormed.frozenConditioningDisjoint
-      · exact isFalse fun hWellFormed => hFrozenCopied hWellFormed.frozenCopiedDisjoint
-    · exact isFalse fun hWellFormed => hCanonical hWellFormed.toIsCanonical
+  decidable_of_iff
+    (params.IsCanonical ∧
+      params.frozen.Disjoint params.copied ∧
+      params.frozen.Disjoint params.conditioning ∧
+      params.copied.Disjoint params.conditioning)
+    ⟨fun ⟨hCanonical, hFrozenCopied, hFrozenConditioning, hCopiedConditioning⟩ =>
+      { toIsCanonical := hCanonical
+        frozenCopiedDisjoint := hFrozenCopied
+        frozenConditioningDisjoint := hFrozenConditioning
+        copiedConditioningDisjoint := hCopiedConditioning },
+      fun hWellFormed =>
+        ⟨hWellFormed.toIsCanonical, hWellFormed.frozenCopiedDisjoint,
+          hWellFormed.frozenConditioningDisjoint, hWellFormed.copiedConditioningDisjoint⟩⟩
 
 /-- Relabels the structural subsets and user-provided conditional-independence metadata of copy parameters. -/
 @[nolint unusedArguments]
