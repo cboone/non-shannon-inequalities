@@ -11,6 +11,7 @@ chanyeung
 checkable
 checkdecls
 codepoint
+componentwise
 cond
 congr
 Congr
@@ -25,6 +26,7 @@ docstrings
 Dougherty
 doughertyfreilingzeger
 Ehmke
+elementwise
 entropic
 equivariant
 extensionless
@@ -33,8 +35,9 @@ Finset
 Fintype
 foldl
 forall
-Frantisek
 formalizable
+formedness
+Frantisek
 Freiling
 funext
 Gattegno
@@ -42,6 +45,7 @@ Hasan
 Hoelzl
 hardwiring
 inproceedings
+inspectable
 Ingleton
 Irrefl
 irrefl
@@ -50,6 +54,7 @@ ISIT
 isit
 ITIP
 infotheo
+injective
 jsonschema
 Kaced
 kacedromashchenko
@@ -94,6 +99,7 @@ relabelings
 reparsed
 repr
 retarget
+rintro
 Rocq
 Romashchenko
 scipy
