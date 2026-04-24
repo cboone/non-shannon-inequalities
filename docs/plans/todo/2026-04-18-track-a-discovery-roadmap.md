@@ -327,18 +327,18 @@ One-line summary: replace the bootstrap `parameterizedCopyLemma` placeholder wit
 
 **Deliverables.**
 
-- `NonShannon/CopyLemma/Parameterized.lean`: replace the placeholder spec with a typed shape. Introduce `CopyLemmaStatement` (or similar) carrying frozen, copied, and conditioning blocks plus the induced conditional-independence pattern. Retain `ParameterizedCopyLemmaTarget` as the naming-convention record for theorem-generation metadata.
-- `NonShannon/CopyLemma/Parameters.lean`: any additional invariants on `CopyParameters` surfaced by the typed shape (for example, disjointness of `frozen`, `copied`, and `conditioning` subsets).
-- First nontrivial statement-layer lemma: a characterization of when two `CopyParameters` values induce the same statement shape modulo variable relabeling. This is the bridge between M1's symmetry layer and copy-lemma statements.
+- `NonShannon/CopyLemma/Parameterized.lean`: replace the placeholder spec with a typed shape. Introduce `CopyLemmaStatement` (or similar) carrying the statement-bearing frozen, copied, and conditioning data, retaining enough information for the legitimate zero-copy case, together with the induced conditional-independence pattern. Retain `ParameterizedCopyLemmaTarget` as the naming-convention record for theorem-generation metadata.
+- `NonShannon/CopyLemma/Parameters.lean`: any additional invariants on `CopyParameters` surfaced by the typed shape (for example, disjointness of `frozen`, `copied`, and `conditioning` subsets), together with an explicit structural projection that forgets non-statement metadata such as debug labels.
+- First nontrivial statement-layer lemma: a characterization of when two `CopyParameters` values induce the same statement shape modulo variable relabeling, phrased on that structural projection rather than on the full metadata-carrying record. This is the bridge between M1's symmetry layer and copy-lemma statements.
 - Theorem-name and module-name conventions for future generated statement targets, documented in a new `docs/research/copy-lemma-naming.md`.
 
 **Why now.** M1 delivered an orbit-aware canonical form for inequalities; M2 lifts that to copy-lemma parameters so that equivalent parameter choices produce equivalent statements. Downstream, M4 consumes the statement shape to annotate known-inequality reproductions, and M5 uses it to dedupe search outputs. Attempting M3 before M2 would force the certificate schema to carry implementation-specific parameter shapes; landing M2 first keeps the certificate layer parameter-shape-agnostic.
 
-**Testing approach.** `NonShannonTest/CopyLemma/Parameters.lean` (extended), `NonShannonTest/CopyLemma/Parameterized.lean` (new) exercise the public API from outside `NonShannon`: construction of representative `CopyParameters` values, the statement-shape equivalence lemma on a small fixture, and the theorem-naming record's string format.
+**Testing approach.** `NonShannonTest/CopyLemma/Parameters.lean` (extended), `NonShannonTest/CopyLemma/Parameterized.lean` (new) exercise the public API from outside `NonShannon`: construction of representative `CopyParameters` values, the statement-shape equivalence lemma on small fixtures including the zero-copy case, the induced-independence derivation rule, and the theorem-naming record's string format.
 
-**Checkpoint gate.** `lake build NonShannon`, `lake lint`, `lake test` green. Statement shape frozen: a roadmap note in `docs/research/copy-lemma-naming.md` records the exact field layout of `CopyLemmaStatement` as of milestone closure, so future refactors must explicitly motivate changes.
+**Checkpoint gate.** `lake build NonShannon`, `lake lint`, `lake test` green. Statement shape frozen: a roadmap note in `docs/research/copy-lemma-naming.md` records the exact field layout of `CopyLemmaStatement` together with the derivation rule for its `independence` field as of milestone closure, so future refactors must explicitly motivate changes.
 
-**Plan file:** `docs/plans/todo/<date>-m2-copy-lemma-statement-layer.md` (spin out at milestone start).
+**Plan file:** `docs/plans/todo/2026-04-23-m2-copy-lemma-statement-layer.md`.
 
 ### M3: Redundancy-certificate oracle boundary
 
