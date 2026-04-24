@@ -77,6 +77,7 @@ theorem CopyLemmaStatement.inducedIndependence_relabel (params : CopyParameters)
     ConditionalIndependencePattern.relabel]
 
 /-- Projecting parameters to a statement commutes with scoped relabeling. -/
+@[simp]
 theorem CopyLemmaStatement.ofParameters_relabel (params : CopyParameters)
     (relabeling : VariableRelabeling) (hScope : relabeling.variableCount = params.variableCount) :
     CopyLemmaStatement.ofParameters (params.relabel relabeling hScope) =
