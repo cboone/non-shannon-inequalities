@@ -338,7 +338,7 @@ One-line summary: replace the bootstrap `parameterizedCopyLemma` placeholder wit
 
 **Checkpoint gate.** `make check` green. Statement shape frozen: `docs/research/copy-lemma-naming.md` records the exact field layout of `CopyLemmaStatement`, the derived `copies` view, the derivation rule for its `independence` field, the `IsCanonical` / `IsWellFormed` split, and the structural projection that forgets metadata, so future refactors must explicitly motivate changes.
 
-**Plan file:** `docs/plans/todo/2026-04-23-m2-copy-lemma-statement-layer.md`.
+**Plan file:** `docs/plans/done/2026-04-23-m2-copy-lemma-statement-layer.md`.
 
 ### M3: Redundancy-certificate oracle boundary
 
