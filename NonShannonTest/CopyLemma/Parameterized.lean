@@ -79,6 +79,13 @@ example :
         (CopyLemmaStatement.ofParameters zeroCopyParams) :=
   CopyParameters.sameStatementShape_iff_ofParameters_sameShape (by decide) (by decide)
 
+example :
+    bootstrapParams.SameStatementShape (bootstrapParams.relabel swapZeroOne swapZeroOne_scope) ↔
+      (CopyLemmaStatement.ofParameters bootstrapParams).SameShape
+        (CopyLemmaStatement.ofParameters
+          (bootstrapParams.relabel swapZeroOne swapZeroOne_scope)) :=
+  CopyParameters.sameStatementShape_iff_ofParameters_sameShape (by decide) (by decide)
+
 example : bootstrapParams.IsCanonical ∧ differentCopyCountParams.IsCanonical := by
   decide
 
