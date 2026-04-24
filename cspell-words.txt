@@ -53,6 +53,7 @@ ISIT
 isit
 ITIP
 infotheo
+injective
 jsonschema
 Kaced
 kacedromashchenko
@@ -97,6 +98,7 @@ relabelings
 reparsed
 repr
 retarget
+rintro
 Rocq
 Romashchenko
 scipy
